@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: market_intel_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: market_intel
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d market_intel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Placeholder for Backend (can be un-commented when ready to dockerize scraper as a cron script/API)
+  # backend:
+  #   build: ./backend
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     - DATABASE_URL=postgresql://admin:secretpassword@postgres:5432/market_intel
+
+  # Placeholder for Frontend
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "4321:4321"
+
+volumes:
+  pgdata:

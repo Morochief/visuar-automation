@@ -1,0 +1,533 @@
+{
+  "LG": [
+    {
+      "name": "Aire Acondicionado LG 24000 BTU Inverter S4UW24K23AE",
+      "price": 5690000.26,
+      "regular_price": 6855422.0,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG 12000 BTU Inverter",
+      "price": 2970000.0,
+      "regular_price": 4445783.0,
+      "btu": 12000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG 24000 BTU Inverter C/Wifi",
+      "price": 6904999.91,
+      "regular_price": 8319277.0,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG 12000 BTU Inverter C/Wifi",
+      "price": 4250000.06,
+      "regular_price": 5120482.0,
+      "btu": 12000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG Artcool 24000 BTU Inverter C/Wifi Gris",
+      "price": 8650000.21,
+      "regular_price": 10421687.0,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG Cassette 60000BTU",
+      "price": 17449000.0,
+      "regular_price": 26445783.0,
+      "btu": 60000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado LG Cassette 36000BTU",
+      "price": 13429000.0,
+      "regular_price": 19397590.0,
+      "btu": 36000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado LG 18.000 BTU Split F/C Gas Ecologico Inverter",
+      "price": 3795000.0,
+      "regular_price": 6012048.0,
+      "btu": 0,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG 18000 BTU Inverter C/Wifi",
+      "price": 5380000.24,
+      "regular_price": 6481928.0,
+      "btu": 18000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG 60000 BTU Inverter Round Cassette",
+      "price": 29109999.87,
+      "regular_price": 35072289.0,
+      "btu": 60000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG 36000 BTU Inverter Round Cassette",
+      "price": 21720000.25,
+      "regular_price": 26168675.0,
+      "btu": 36000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG Artcool 18000 BTU Inverter C/Wifi Gris",
+      "price": 7019999.73,
+      "regular_price": 8457831.0,
+      "btu": 18000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG Artcool 12000 BTU Inverter C/Wifi Gris",
+      "price": 5654999.99,
+      "regular_price": 6813253.0,
+      "btu": 12000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado LG 12.000 BTU Split F/C Gas Ecologico Inverter",
+      "price": 3849999.82,
+      "regular_price": 4638554.0,
+      "btu": 0,
+      "is_inverter": true
+    }
+  ],
+  "MIDEA": [
+    {
+      "name": "Aire Acondicionado Midea 18000BTU Con Kit De Instalación",
+      "price": 3699000.41,
+      "regular_price": 4456627.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Midea 12000BTU Con Kit De Instalación",
+      "price": 2168999.99,
+      "regular_price": 2613253.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Midea 24000BTU Con Kit De Instalación",
+      "price": 4984999.92,
+      "regular_price": 6006024.0,
+      "btu": 24000,
+      "is_inverter": false
+    }
+  ],
+  "GOODWEATHER": [
+    {
+      "name": "Aire Acondicionado Goodweather 24000 BTU Cassete",
+      "price": 8090000.0,
+      "regular_price": 10084337.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 48000 BTU Cassete",
+      "price": 13189999.78,
+      "regular_price": 15891566.0,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 24000 BTU",
+      "price": 4749000.0,
+      "regular_price": 6301205.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 12000 BTU Ventana",
+      "price": 3689999.89,
+      "regular_price": 4445783.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 36000 BTU",
+      "price": 9290000.0,
+      "regular_price": 11662651.0,
+      "btu": 36000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 24000 BTU Inverter",
+      "price": 5490000.0,
+      "regular_price": 7361446.0,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 12000 BTU Inverter",
+      "price": 2490000.0,
+      "regular_price": 3475904.0,
+      "btu": 12000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 22000 BTU Inverter",
+      "price": 5249000.0,
+      "regular_price": 7228916.0,
+      "btu": 22000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 18000 BTU Inverter",
+      "price": 3990000.0,
+      "regular_price": 5216867.0,
+      "btu": 18000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 28000 BTU Inverter",
+      "price": 6470000.23,
+      "regular_price": 7795181.0,
+      "btu": 28000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 60000 BTU Piso/Techo",
+      "price": 13690000.0,
+      "regular_price": 17036145.0,
+      "btu": 60000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 48000 BTU Piso/Techo",
+      "price": 11869000.0,
+      "regular_price": 15168675.0,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 36000 BTU Piso/Techo",
+      "price": 9270000.25,
+      "regular_price": 11168675.0,
+      "btu": 36000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire acondicionado Goodweather 30000 BTU",
+      "price": 6390000.0,
+      "regular_price": 8421687.0,
+      "btu": 30000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 12000 BTU",
+      "price": 2079000.0,
+      "regular_price": 2824096.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 18000 BTU",
+      "price": 3689000.0,
+      "regular_price": 4656627.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 12000 BTU Portátil",
+      "price": 2900000.0,
+      "regular_price": 3602410.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 18000 BTU Ventana",
+      "price": 4240000.22,
+      "regular_price": 5108434.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Goodweather 36000 BTU Piso/Techo Inverter",
+      "price": 15550000.2,
+      "regular_price": 18734940.0,
+      "btu": 36000,
+      "is_inverter": true
+    }
+  ],
+  "FAMA": [
+    {
+      "name": "Aire Acondicionado Fama 12000 BTU Inverter",
+      "price": 2450000.0,
+      "regular_price": 3240964.0,
+      "btu": 12000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado FAMA 36.000 BTU PISOTECHO",
+      "price": 7889999.92,
+      "regular_price": 9506024.0,
+      "btu": 0,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado FAMA 60.000 BTU PISOTECHO",
+      "price": 11899999.67,
+      "regular_price": 14337349.0,
+      "btu": 0,
+      "is_inverter": false
+    }
+  ],
+  "HAUSTEC": [
+    {
+      "name": "Aire Acondicionado Haustec 60000 BTU Piso/Techo",
+      "price": 11090000.0,
+      "regular_price": 13722892.0,
+      "btu": 60000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 48000 BTU Piso/Techo",
+      "price": 9790000.0,
+      "regular_price": 12228916.0,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 24000 BTU Inverter C/ Soporte",
+      "price": 5410000.0,
+      "regular_price": 6686747.0,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Haustec 18000 BTU Inverter C/ Soporte",
+      "price": 3749000.0,
+      "regular_price": 4686747.0,
+      "btu": 18000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Haustec 12000 BTU Inverter C/ Soporte",
+      "price": 2449000.0,
+      "regular_price": 3204819.0,
+      "btu": 12000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Haustec 36000 BTU",
+      "price": 7790000.0,
+      "regular_price": 9698795.0,
+      "btu": 36000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 24000 BTU",
+      "price": 4790000.0,
+      "regular_price": 5951807.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 18000 BTU",
+      "price": 3449000.0,
+      "regular_price": 4287952.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 12000 BTU C/ Soporte",
+      "price": 1949000.0,
+      "regular_price": 2698795.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 60000 BTU Cassette",
+      "price": 12199999.85,
+      "regular_price": 14698795.0,
+      "btu": 60000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 48000 BTU Cassette",
+      "price": 9969999.84,
+      "regular_price": 12012048.0,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 36000 BTU Cassette",
+      "price": 7710000.31,
+      "regular_price": 9289157.0,
+      "btu": 36000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 36000 BTU Piso/Techo",
+      "price": 7429999.81,
+      "regular_price": 8951807.0,
+      "btu": 36000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 24000 BTU Piso/Techo",
+      "price": 4390000.31,
+      "regular_price": 5289157.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Haustec 30000 BTU",
+      "price": 5550000.01,
+      "regular_price": 6686747.0,
+      "btu": 30000,
+      "is_inverter": false
+    }
+  ],
+  "OSTER": [
+    {
+      "name": "AIRE ACONDICIONADO OSTER 24000 BTU",
+      "price": 4590000.0,
+      "regular_price": 6010843.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "AIRE ACONDICIONADO OSTER 18000 BTU",
+      "price": 3449000.0,
+      "regular_price": 4455422.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "AIRE ACONDICIONADO OSTER 12000 BTU",
+      "price": 1869000.0,
+      "regular_price": 2709639.0,
+      "btu": 12000,
+      "is_inverter": false
+    }
+  ],
+  "CARRIER": [
+    {
+      "name": "Aire Acondicionado Carrier 18000 BTU",
+      "price": 3554000.24,
+      "regular_price": 4281928.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Carrier 12000 BTU",
+      "price": 2215000.25,
+      "regular_price": 2668675.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Carrier 24000 BTU",
+      "price": 4969000.01,
+      "regular_price": 5986747.0,
+      "btu": 24000,
+      "is_inverter": false
+    }
+  ],
+  "SAMSUNG": [
+    {
+      "name": "Aire Acondicionado Samsung 12.000 BTU Split Inverter",
+      "price": 5364000.33,
+      "regular_price": 6462651.0,
+      "btu": 0,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Samsung 12.000 BTU - Wind free",
+      "price": 5025000.11,
+      "regular_price": 6054217.0,
+      "btu": 0,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Samsung 24.000 BTU Split Inverter",
+      "price": 7588999.59,
+      "regular_price": 9143373.0,
+      "btu": 0,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Samsung Split Wind-Free 18.000 BTU",
+      "price": 5569000.0,
+      "regular_price": 6926506.0,
+      "btu": 0,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado LG S4NW24K23AE Dualcool Inverter 24.000 BTU",
+      "price": 5481999.77,
+      "regular_price": 6604819.0,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Samsung 24.000 BTU - Wind free",
+      "price": 7050000.08,
+      "regular_price": 8493976.0,
+      "btu": 0,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Samsung 18.000 BTU Split Inverter",
+      "price": 5600000.04,
+      "regular_price": 6746988.0,
+      "btu": 0,
+      "is_inverter": true
+    }
+  ],
+  "TCL": [
+    {
+      "name": "Aire Acondicionado TCL 24000 BTU Inverter",
+      "price": 5139999.93,
+      "regular_price": 6192771.0,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado TCL 18000 BTU",
+      "price": 3649999.7,
+      "regular_price": 4397590.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado TCL 12000 BTU",
+      "price": 2189999.82,
+      "regular_price": 2638554.0,
+      "btu": 12000,
+      "is_inverter": false
+    }
+  ],
+  "TOKYO": [
+    {
+      "name": "Aire Acondicionado Tokyo Xperience 24000 BTU F/C",
+      "price": 5390000.08,
+      "regular_price": 6493976.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Tokyo Xperience 18000 BTU F/C",
+      "price": 3730000.08,
+      "regular_price": 4493976.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Tokyo Xperience 12000 BTU F/C",
+      "price": 2330000.07,
+      "regular_price": 2807229.0,
+      "btu": 12000,
+      "is_inverter": false
+    }
+  ]
+}

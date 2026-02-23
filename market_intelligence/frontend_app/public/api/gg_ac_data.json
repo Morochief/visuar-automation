@@ -1,0 +1,426 @@
+{
+  "TOKYO": [
+    {
+      "name": "Acondicionador De Aire Tokyo Optima Inverter 24000 BTU",
+      "price": 7987000.0,
+      "regular_price": null,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Acondicionador de Aire Tokyo Xperience 12000 BTU F/C Eco MI23-12CHR1 Pared",
+      "price": 2039000.0,
+      "regular_price": 2299000.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Tokyo Xperience 18000 BTU F/C ECO MI23-18CHR1",
+      "price": 3439000.0,
+      "regular_price": 3869000.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Tokyo Xperience 24000 BTU F/C",
+      "price": 4599000.0,
+      "regular_price": 5199000.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador De Aire Tokyo Optima Inverter 12000 BTU",
+      "price": 3176000.0,
+      "regular_price": null,
+      "btu": 12000,
+      "is_inverter": true
+    },
+    {
+      "name": "Acondicionador De Aire Tokyo Xperience 30000Btu",
+      "price": 7922000.0,
+      "regular_price": null,
+      "btu": 30000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Tokyo 24.000 BTU 24CHR1",
+      "price": 4599000.0,
+      "regular_price": 5199000.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador De Aire Tokyo Optima Inverter 18000BTU",
+      "price": 5313000.0,
+      "regular_price": null,
+      "btu": 18000,
+      "is_inverter": true
+    },
+    {
+      "name": "Acondicionador De Aire Tokyo Ducto Vertical F/C 60000Btu Mod Cch21-Dv-60Chr1 380V-415/3Ph/50Hz",
+      "price": 16183000.0,
+      "regular_price": null,
+      "btu": 60000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador De Aire Tokyo Ducto Vertical F/c 48000btu Mod Ech18-dv-48chr1 380-415v/3ph/50hz",
+      "price": 17343000.0,
+      "regular_price": null,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Tokyo Eco Piso/Techo 48.000 BTU",
+      "price": 12420000.0,
+      "regular_price": null,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Cortina de Aire Tokyo FM3012 1.20 Mts.",
+      "price": 1109000.0,
+      "regular_price": null,
+      "btu": null,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire De Ventana Tokyo Aatokvem12K 12000 Btu C/ Control Remoto",
+      "price": 3272000.0,
+      "regular_price": null,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador De Aire Tokyo P/Techo Experience 48000BTU",
+      "price": 13802000.0,
+      "regular_price": null,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "AA Compacto Tokyo Mod Trct360Cwn1 360000Btu 380-415V 3N 50Hz",
+      "price": 118772000.0,
+      "regular_price": null,
+      "btu": 60000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador De Aire Tokyo Xperience 18000 BTU",
+      "price": 4363000.0,
+      "regular_price": null,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador De Aire Tokyo Piso/Techo Xperience 36000Btu",
+      "price": 10581000.0,
+      "regular_price": null,
+      "btu": 36000,
+      "is_inverter": false
+    }
+  ],
+  "GOODWEATHER": [
+    {
+      "name": "Acondicionador de Aire Goodweather 27.980 BTU GW-30INVUM",
+      "price": 6362000.0,
+      "regular_price": null,
+      "btu": 27980,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Goodweather 18000 BTU F/C Eco GW18 Inverter",
+      "price": 4300000.0,
+      "regular_price": 4342000.0,
+      "btu": 18000,
+      "is_inverter": true
+    },
+    {
+      "name": "Acondicionador de Aire Goodweather Eco Inverter 12.000 BTU GW12",
+      "price": 2530000.0,
+      "regular_price": 2788000.0,
+      "btu": 12000,
+      "is_inverter": true
+    },
+    {
+      "name": "Acondicionador de Aire Goodweather 12.000 BTU Eco GW-12FO",
+      "price": 2079000.0,
+      "regular_price": 2399000.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Goodweather GOODWEATH 24000 BTU F/C ECO GW-24FO SPLIT",
+      "price": 4739000.0,
+      "regular_price": 5229000.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Goodweather 18000 BTU",
+      "price": 3599000.0,
+      "regular_price": 3979000.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Goodweather 30000 F/C Eco Gw-30Ab Pared",
+      "price": 7165000.0,
+      "regular_price": null,
+      "btu": 30000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionado de aire Goodweather 24000 BTU F/C Eco Inverter",
+      "price": 5790000.0,
+      "regular_price": 6072000.0,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Acondicionador de Aire Goodweather Piso/Techo 48.000 BTU",
+      "price": 11859000.0,
+      "regular_price": 12964000.0,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Goodweather Cassette 48.000 BTU",
+      "price": 13822000.0,
+      "regular_price": null,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Cassette Goodweather 12.000 BTU",
+      "price": 6685000.0,
+      "regular_price": null,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Goodweather Casette 36000 BTU",
+      "price": 10953000.0,
+      "regular_price": null,
+      "btu": 36000,
+      "is_inverter": false
+    }
+  ],
+  "MIDAS": [
+    {
+      "name": "Acondicionador de Aire Midas 18.000 btu gas ecológico",
+      "price": 3891000.0,
+      "regular_price": null,
+      "btu": 18000,
+      "is_inverter": false
+    }
+  ],
+  "ALTECH": [
+    {
+      "name": "Acondicionador de Aire Altech 12000 BTU F/C ECO ALT12H410 Split",
+      "price": 1849000.0,
+      "regular_price": 2199000.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 24000 BTU F/C ECO ALT24H410 Split",
+      "price": 4199000.0,
+      "regular_price": 4999000.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Portátil Altech 12.000 BTU F/C",
+      "price": 2499000.0,
+      "regular_price": 2820000.0,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 18000 BTU F/C ECO ALT18H410 Split",
+      "price": 2999000.0,
+      "regular_price": 3859000.0,
+      "btu": 18000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 30000 BTU F/C ECO",
+      "price": 5989000.0,
+      "regular_price": 7248000.0,
+      "btu": 30000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 60000 BTU F/C ALCF-H60/5R1FA-R PT",
+      "price": 11490000.0,
+      "regular_price": 13239000.0,
+      "btu": 60000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 36000 BTU F/C ALCF-H36/4R1FA-R PT",
+      "price": 8899000.0,
+      "regular_price": 9349000.0,
+      "btu": 36000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 60000 BTU F/C ALCA-H60/5R1YA-R Cassette",
+      "price": 10479000.0,
+      "regular_price": 11932000.0,
+      "btu": 60000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 24000 BTU F/C ALCF-H24/4R1FA-R PT",
+      "price": 5249000.0,
+      "regular_price": 8130000.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 36000 BTU F/C ALCA-H36/4R1YA-R Cassette",
+      "price": 7899000.0,
+      "regular_price": 9749000.0,
+      "btu": 36000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 24000 BTU F/C ALCA-H24/4R1YA-R Cassette",
+      "price": 5809000.0,
+      "regular_price": 7171000.0,
+      "btu": 24000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 48000 BTU F/C ALCA-H48/5R1YA-R Cassette",
+      "price": 9619000.0,
+      "regular_price": 10633000.0,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador de Aire Altech 48000 BTU F/C ALCF-H48/5R1FA-R PT",
+      "price": 10977000.0,
+      "regular_price": 12399000.0,
+      "btu": 48000,
+      "is_inverter": false
+    }
+  ],
+  "MABE": [
+    {
+      "name": "Acondicionador De Aire Mabe Mmt12 12000btu F/c Blanco",
+      "price": 2859000.0,
+      "regular_price": null,
+      "btu": 12000,
+      "is_inverter": false
+    },
+    {
+      "name": "Acondicionador De Aire Mabe 24000BTU Mmt128",
+      "price": 6169000.0,
+      "regular_price": null,
+      "btu": 24000,
+      "is_inverter": false
+    }
+  ],
+  "SAMSUNG": [
+    {
+      "name": "Acondicionador de Aire Samsung 18.000 BTU Split WindFree Inverter Wi-Fi F/C AR18BSEAMWK/ZS",
+      "price": 5569000.0,
+      "regular_price": 6075000.0,
+      "btu": 18000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Samsung AR24TSFZAWK/ZS SPLIT24000BTU Inverter",
+      "price": 7932000.0,
+      "regular_price": null,
+      "btu": 24000,
+      "is_inverter": true
+    }
+  ],
+  "TCL": [
+    {
+      "name": "Aire Acondicionado Cassette TCL 36000 Btu F/C",
+      "price": 12408000.0,
+      "regular_price": null,
+      "btu": 36000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Cassette TCL 48000 Btu F/c",
+      "price": 15098000.0,
+      "regular_price": null,
+      "btu": 48000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Cassette TCL 60000 Btu F/C",
+      "price": 16396000.0,
+      "regular_price": null,
+      "btu": 60000,
+      "is_inverter": false
+    },
+    {
+      "name": "Aire Acondicionado Split TCL Pared 12000 Btu Inverter T-pro",
+      "price": 3508000.0,
+      "regular_price": null,
+      "btu": 12000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Split TCL Pared 24000 Btu Inverter T-Pro",
+      "price": 6784000.0,
+      "regular_price": null,
+      "btu": 24000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Split TCL Pared 18000 Btu Inverter T-Pro",
+      "price": 5093000.0,
+      "regular_price": null,
+      "btu": 18000,
+      "is_inverter": true
+    },
+    {
+      "name": "Aire Acondicionado Split Tcl Pared 12000 Btu F/c",
+      "price": 2868000.0,
+      "regular_price": null,
+      "btu": 12000,
+      "is_inverter": false
+    }
+  ],
+  "HITACHI": [
+    {
+      "name": "Acondicionador De Aire Piso Techo Hitachi 18.000btu R410 (50hz) 380-415v/3ph/50hz",
+      "price": 6220000.0,
+      "regular_price": null,
+      "btu": 18000,
+      "is_inverter": false
+    }
+  ],
+  "VCP": [
+    {
+      "name": "CORTINA DE AIRE VCP DE 1,2M VCC000420",
+      "price": 1081000.0,
+      "regular_price": null,
+      "btu": null,
+      "is_inverter": false
+    },
+    {
+      "name": "CORTINA DE AIRE VCP DE 1,5M VCC000422",
+      "price": 1330000.0,
+      "regular_price": null,
+      "btu": null,
+      "is_inverter": false
+    },
+    {
+      "name": "CORTINA DE AIRE VCP DE 1M VCC000420",
+      "price": 747000.0,
+      "regular_price": null,
+      "btu": null,
+      "is_inverter": false
+    }
+  ]
+}
