@@ -11,7 +11,8 @@ from playwright.async_api import async_playwright
 
 from models import Base, Product, Competitor, PriceLog, CompetitorProduct, PendingMapping
 
-DATABASE_URL = "sqlite:///market_intel.db"
+import os
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///data/market_intel.db")
 
 # SOC Enterprise Logging format
 logging.basicConfig(

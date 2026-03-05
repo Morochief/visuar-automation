@@ -1,0 +1,7 @@
+node_modules
+.astro
+dist
+build_log.txt
+*.md
+.git
+.gitignore

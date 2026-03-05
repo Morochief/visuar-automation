@@ -1,0 +1,4 @@
+# SSL certificates will be placed here
+# Use Certbot or Hostinger's SSL to generate:
+#   fullchain.pem
+#   privkey.pem

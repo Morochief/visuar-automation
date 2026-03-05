@@ -1,39 +1,96 @@
-version: '3.8'
+# =============================================================
+# VISUAR Market Intelligence - Docker Compose Production
+# Designed for Hostinger VPS deployment
+# =============================================================
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: market_intel_db
+  # ─────────────────────────────────────────────────
+  # BACKEND: Python Scraper Engine with Playwright
+  # Runs on a cron schedule (every 6 hours) 
+  # Persists data to shared SQLite volume
+  # ─────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: visuar_scraper
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: secretpassword
-      POSTGRES_DB: market_intel
-    ports:
-      - "5432:5432"
+      - DATABASE_URL=sqlite:///app/data/market_intel.db
+      - PYTHONUNBUFFERED=1
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - scraper_data:/app/data
+      - shared_json:/app/output
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d market_intel"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    networks:
+      - visuar_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
 
-  # Placeholder for Backend (can be un-commented when ready to dockerize scraper as a cron script/API)
-  # backend:
-  #   build: ./backend
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   environment:
-  #     - DATABASE_URL=postgresql://admin:secretpassword@postgres:5432/market_intel
+  # ─────────────────────────────────────────────────
+  # FRONTEND: Astro + React SSR Dashboard
+  # Accessible on port 4321
+  # ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend_app
+      dockerfile: Dockerfile
+    container_name: visuar_dashboard
+    ports:
+      - "${FRONTEND_PORT:-4321}:4321"
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=4321
+    volumes:
+      - shared_json:/app/public/api:ro
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - visuar_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
-  # Placeholder for Frontend
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "4321:4321"
+  # ─────────────────────────────────────────────────
+  # NGINX: Reverse Proxy with SSL termination
+  # Exposes port 80/443 to the internet
+  # ─────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: visuar_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - frontend
+    restart: unless-stopped
+    networks:
+      - visuar_network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
 
 volumes:
-  pgdata:
+  scraper_data:
+    driver: local
+  shared_json:
+    driver: local
+  nginx_cache:
+    driver: local
+
+networks:
+  visuar_network:
+    driver: bridge

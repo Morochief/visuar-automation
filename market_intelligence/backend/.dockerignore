@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+*.pyo
+*.db
+*.log
+.git
+.gitignore
+output.txt
+check_*.py
+debug_*.py
