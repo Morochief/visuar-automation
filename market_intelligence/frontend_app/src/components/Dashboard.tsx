@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingDown, TrendingUp, Activity, RefreshCw, Layers, Scale, List } from 'lucide-react';
+import { TrendingDown, TrendingUp, Activity, RefreshCw, Layers, Scale, List, Clock, CheckCircle2, Loader2 } from 'lucide-react';
 import { DashboardKPIs } from './DashboardKPIs';
 import { PriceHistoryChart } from './PriceHistoryChart';
 import { MasterProductList } from './MasterProductList';
@@ -10,28 +10,101 @@ export default function Dashboard() {
     const [activeTab, setActiveTab] = useState('MAIN');
     const [rows, setRows] = useState([]);
     const [scrapedData, setScrapedData] = useState<{ visuar: any[], gg: any[] }>({ visuar: [], gg: [] });
-    
+
     // Comparador Libre - State
     const [compareVisuarId, setCompareVisuarId] = useState('');
     const [compareGgId, setCompareGgId] = useState('');
 
     const [loading, setLoading] = useState(true);
+    const [scraping, setScraping] = useState(false);
+    const [scrapeMessage, setScrapeMessage] = useState('');
+    const [lastScrape, setLastScrape] = useState<string | null>(null);
 
     const loadData = async () => {
         setLoading(true);
         try {
             const response = await fetch('/api/data.json');
             const data = await response.json();
-            // La API ahora devuelve { rows, stats }
             setRows(data.rows || data);
 
             const scrapedRes = await fetch('/api/scraped_data.json');
             const scrapedData = await scrapedRes.json();
             setScrapedData(scrapedData);
+
+            // Load last scrape timestamp
+            try {
+                const statusRes = await fetch('/backend/api/status');
+                if (statusRes.ok) {
+                    const status = await statusRes.json();
+                    if (status.metadata?.last_scrape) {
+                        setLastScrape(status.metadata.last_scrape);
+                    }
+                    if (status.scraping) {
+                        setScraping(true);
+                        setScrapeMessage('Scraping en progreso...');
+                        pollScrapeStatus();
+                    }
+                }
+            } catch {
+                // Backend API might not be available in dev mode
+            }
         } catch (e) {
             console.error(e);
         }
         setLoading(false);
+    };
+
+    const pollScrapeStatus = () => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch('/backend/api/status');
+                if (res.ok) {
+                    const status = await res.json();
+                    if (!status.scraping) {
+                        clearInterval(interval);
+                        setScraping(false);
+                        if (status.error) {
+                            setScrapeMessage(`Error: ${status.error}`);
+                            setTimeout(() => setScrapeMessage(''), 5000);
+                        } else {
+                            const v = status.metadata?.visuar_count || 0;
+                            const g = status.metadata?.gg_count || 0;
+                            setScrapeMessage(`Listo: ${v} Visuar + ${g} GG productos`);
+                            setLastScrape(status.metadata?.last_scrape || null);
+                            setTimeout(() => setScrapeMessage(''), 5000);
+                            // Reload dashboard data
+                            loadData();
+                        }
+                    }
+                }
+            } catch {
+                // ignore poll errors
+            }
+        }, 3000);
+    };
+
+    const triggerScrape = async () => {
+        if (scraping) return;
+        setScraping(true);
+        setScrapeMessage('Iniciando scraping...');
+
+        try {
+            const res = await fetch('/backend/api/scrape', { method: 'POST' });
+            if (res.status === 202) {
+                setScrapeMessage('Scraping en progreso... Esto puede tardar 1-2 minutos.');
+                pollScrapeStatus();
+            } else if (res.status === 409) {
+                setScrapeMessage('Ya hay un scraping en ejecucion.');
+                pollScrapeStatus();
+            } else {
+                setScrapeMessage('Error al iniciar scraping');
+                setScraping(false);
+            }
+        } catch (e) {
+            setScrapeMessage('No se pudo conectar al backend');
+            setScraping(false);
+            setTimeout(() => setScrapeMessage(''), 3000);
+        }
     };
 
     useEffect(() => {
@@ -60,12 +133,42 @@ export default function Dashboard() {
                             Market Intelligence Engine
                         </h1>
                         <p className="text-slate-400 mt-1">Comparativa de precios Visuar vs Gonzalez Gimenez</p>
+                        {lastScrape && (
+                            <p className="text-slate-500 text-xs mt-1 flex items-center gap-1">
+                                <Clock size={12} />
+                                Ultima actualizacion: {new Date(lastScrape).toLocaleString('es-PY')}
+                            </p>
+                        )}
                     </div>
-                    <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 transition-colors rounded-lg font-medium shadow-lg shadow-indigo-900/20 text-white">
-                        <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-                        Sincronizar Data Local
-                    </button>
+                    <div className="flex flex-col items-end gap-2">
+                        <button
+                            onClick={triggerScrape}
+                            disabled={scraping}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium shadow-lg transition-all text-white ${scraping
+                                    ? 'bg-amber-600 cursor-wait shadow-amber-900/20'
+                                    : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/20 hover:shadow-indigo-800/30'
+                                }`}
+                        >
+                            {scraping ? (
+                                <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                                <RefreshCw size={18} />
+                            )}
+                            {scraping ? 'Scraping...' : 'Sincronizar Datos'}
+                        </button>
+                        {scrapeMessage && (
+                            <span className={`text-xs px-3 py-1 rounded-full font-medium ${scrapeMessage.includes('Error') || scrapeMessage.includes('No se pudo')
+                                    ? 'bg-rose-900/30 text-rose-400'
+                                    : scrapeMessage.includes('Listo')
+                                        ? 'bg-emerald-900/30 text-emerald-400'
+                                        : 'bg-amber-900/30 text-amber-400'
+                                }`}>
+                                {scrapeMessage}
+                            </span>
+                        )}
+                    </div>
                 </header>
+
 
                 {/* Tabs Navigation */}
                 <div className="flex gap-4 border-b border-slate-800 pb-2">

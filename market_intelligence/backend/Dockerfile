@@ -1,12 +1,10 @@
 # =============================================================
-# Market Intelligence Backend - Scraper Engine
-# Multi-stage build for production deployment on Hostinger VPS
+# Market Intelligence Backend
+# Scraper + API Server for on-demand triggers
 # =============================================================
 FROM python:3.11-slim AS base
 
 # System dependencies for Playwright Chromium
-# Note: We install deps manually instead of playwright install-deps
-# to avoid missing package issues on different Debian versions
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
@@ -48,32 +46,31 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers (Chromium only to save space)
-# Skip install-deps since we manually installed dependencies above
+# Install Playwright browsers (Chromium only)
 RUN playwright install chromium
 
 # Copy application code
 COPY . .
 
-# Create data directory for SQLite database persistence
-RUN mkdir -p /app/data
+# Create directories
+RUN mkdir -p /app/data /app/output
 
-# Setup cron job for automated scraping (runs every 6 hours)
-RUN echo "0 */6 * * * cd /app && python scraper.py >> /var/log/scraper.log 2>&1" > /etc/cron.d/scraper-cron \
+# Setup cron job for automated scraping (every 6 hours)
+RUN echo "0 */6 * * * cd /app && python pipeline.py >> /var/log/scraper.log 2>&1" > /etc/cron.d/scraper-cron \
     && chmod 0644 /etc/cron.d/scraper-cron \
-    && crontab /etc/cron.d/scraper-cron
+    && crontab /etc/cron.d/scraper-cron \
+    && touch /var/log/scraper.log
 
-# Create entrypoint script
-RUN echo '#!/bin/bash\n\
-    echo "[BOOT] Starting Market Intelligence Backend..."\n\
-    echo "[BOOT] Running initial scrape..."\n\
-    python scraper.py\n\
-    echo "[BOOT] Initial scrape complete. Starting cron daemon..."\n\
-    cron -f' > /app/entrypoint.sh \
-    && chmod +x /app/entrypoint.sh
+# Copy and setup entrypoint
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh && sed -i 's/\r$//' /app/entrypoint.sh
 
-# Health check
-HEALTHCHECK --interval=60s --timeout=10s --retries=3 \
-    CMD python -c "import sqlite3; conn = sqlite3.connect('/app/data/market_intel.db'); conn.close()" || exit 1
+
+# Expose API port
+EXPOSE 5000
+
+# Health check via API
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
 CMD ["/app/entrypoint.sh"]
