@@ -11,6 +11,11 @@ export default function Dashboard() {
     const [rows, setRows] = useState([]);
     const [scrapedData, setScrapedData] = useState<{ visuar: any[], gg: any[] }>({ visuar: [], gg: [] });
 
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [dataError, setDataError] = useState('');
+
     // Comparador Libre - State
     const [compareVisuarId, setCompareVisuarId] = useState('');
     const [compareGgId, setCompareGgId] = useState('');
@@ -20,16 +25,22 @@ export default function Dashboard() {
     const [scrapeMessage, setScrapeMessage] = useState('');
     const [lastScrape, setLastScrape] = useState<string | null>(null);
 
-    const loadData = async () => {
+    const loadData = async (currentPage = page) => {
         setLoading(true);
+        setDataError('');
         try {
-            const response = await fetch('/api/data.json');
+            const response = await fetch(`/backend/api/live_data?page=${currentPage}&limit=50`);
+            if (!response.ok) throw new Error('Error en API en vivo');
+            
             const data = await response.json();
-            setRows(data.rows || data);
+            setRows(data.rows || []);
+            setTotalPages(data.stats?.total_pages || 1);
 
+            // Fetch static scraped catalog datasets used by Comparador Libre and standalone logs
+            // TODO (Tech Debt): Refactor catalog endpoints to also use live DB queries later.
             const scrapedRes = await fetch('/api/scraped_data.json');
-            const scrapedData = await scrapedRes.json();
-            setScrapedData(scrapedData);
+            const scData = await scrapedRes.json();
+            setScrapedData(scData);
 
             // Load last scrape timestamp
             try {
@@ -50,6 +61,7 @@ export default function Dashboard() {
             }
         } catch (e) {
             console.error(e);
+            setDataError('No se pudo conectar con la base de datos PostgreSQL. Verifica que el backend esté en ejecución.');
         }
         setLoading(false);
     };
@@ -204,25 +216,60 @@ export default function Dashboard() {
 
                 {activeTab === 'MAIN' && (
                     <>
+                        {loading && rows.length === 0 ? (
+                            <div className="py-20 flex flex-col items-center justify-center">
+                                <Loader2 className="animate-spin text-indigo-500 mb-4" size={48} />
+                                <p className="text-slate-400">Consultando métricas en vivo (PostgreSQL)...</p>
+                            </div>
+                        ) : dataError ? (
+                            <div className="py-12 px-6 text-center text-rose-500 bg-rose-950/20 rounded-xl border border-rose-900/50">
+                                <p className="font-medium text-lg mb-2">Error de conexión</p>
+                                <p className="text-sm">{dataError}</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Dashboard KPIs */}
+                                <DashboardKPIs />
+                                <PriceHistoryChart data={rows} />
 
-                        {/* Dashboard KPIs */}
-                        <DashboardKPIs />
-                        <PriceHistoryChart />
+                                {/* Tabla de Datos Premium */}
+                                <MasterProductList products={rows.map((row: any) => ({
+                                    id: row.id,
+                                    master_name: row.name,
+                                    visuar_price: row.visuar_price?.toLocaleString('es-PY') || 'N/A',
+                                    gg_price: row.gg_price,
+                                    best_competitor: row.gg_name || 'Sin competencia',
+                                    diff_percent: row.diff_percent || 0,
+                                    match_level: row.gg_price ? 'EXACTO' : 'NINGUNO',
+                                    match_label: row.gg_price ? 'Match BD' : 'Sin Match',
+                                    match_color: row.gg_price ? 'green' : 'red',
+                                    match_percentage: row.gg_price ? 100 : 0,
+                                    real_margin_percent: row.real_margin_percent,
+                                    competitors: row.gg_price ? [{ name: 'Gonzalez Gimenez', price: row.gg_price?.toLocaleString('es-PY'), diff: row.diff_percent, raw_name: row.gg_name }] : []
+                                }))} />
 
-                        {/* Tabla de Datos Premium */}
-                        <MasterProductList products={rows.map((row: any) => ({
-                            id: row.id,
-                            master_name: row.name,
-                            visuar_price: row.visuar_price?.toLocaleString('es-PY') || 'N/A',
-                            gg_price: row.gg_price,
-                            best_competitor: row.gg_brand || 'Sin competencia',
-                            diff_percent: row.diff_percent || 0,
-                            match_level: row.match_level || 'NINGUNO',
-                            match_label: row.match_label || 'Sin Match',
-                            match_color: row.match_color || 'red',
-                            match_percentage: row.match_percentage || 0,
-                            competitors: []
-                        }))} />
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex justify-center items-center gap-4 mt-6">
+                                        <button 
+                                            disabled={page === 1} 
+                                            onClick={() => { setPage(page - 1); loadData(page - 1); }}
+                                            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                                        >
+                                            Anterior
+                                        </button>
+                                        <span className="text-slate-400 font-medium tracking-wide">Página {page} de {totalPages}</span>
+                                        <button 
+                                            disabled={page === totalPages} 
+                                            onClick={() => { setPage(page + 1); loadData(page + 1); }}
+                                            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                                        >
+                                            Siguiente
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </>
                 )}
 

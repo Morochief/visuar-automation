@@ -55,6 +55,19 @@ cd visuar-automation/market_intelligence
 nano .env
 ```
 
+If using the Alert Engine and AI Matcher, specify these in `.env`:
+```env
+# AI Product Matching (DeepSeek via NVIDIA)
+NVIDIA_API_KEY=your_nvidia_api_key_here
+
+# Alert Engine Notifications (Optional)
+# SMTP_USER=alerts@yourdomain.com
+# SMTP_PASS=your_smtp_password
+# TELEGRAM_BOT_TOKEN=your_bot_token
+
+# Security (PostgreSQL pgcrypto)
+ENCRYPTION_KEY=your_secret_32_char_key_here
+```
 ## Step 4: Build & Launch
 
 ```bash
@@ -128,15 +141,11 @@ docker compose down -v
 # Force a manual scrape
 docker compose exec backend python scraper.py
 
-# Check database
-docker compose exec backend python -c "
-import sqlite3
-conn = sqlite3.connect('/app/data/market_intel.db')
-cur = conn.cursor()
-cur.execute('SELECT COUNT(*) FROM competitor_products')
-print(f'Total products: {cur.fetchone()[0]}')
-conn.close()
-"
+# Check database (PostgreSQL)
+docker compose exec postgres psql -U visuar_admin -d market_intel_db -c "SELECT COUNT(*) FROM competitor_products;"
+
+# Run migration (if updating an existing database)
+docker compose exec -T postgres psql -U visuar_admin -d market_intel_db -v enc_key='SU_CLAVE_AQUI' < database/migrations/migrate_pgcrypto.sql
 ```
 
 ## Resource Requirements

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface GGCatalogProduct {
     name: string;
@@ -30,6 +32,75 @@ export const GGCatalog = () => {
         fetchData();
     }, []);
 
+    const downloadExcel = () => {
+        if (!data) return;
+
+        const wb = XLSX.utils.book_new();
+        const brands = Object.keys(data).sort();
+
+        // Sheet with all products
+        const allRows: any[][] = [
+            ['Marca', 'Producto', 'BTU', 'Tipo', 'Precio Regular (Gs.)', 'Precio Final (Gs.)']
+        ];
+
+        for (const brand of brands) {
+            for (const p of data[brand]) {
+                allRows.push([
+                    brand,
+                    p.name,
+                    p.btu,
+                    p.is_inverter ? 'INVERTER' : 'ON/OFF',
+                    p.regular_price || '',
+                    p.price
+                ]);
+            }
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet(allRows);
+
+        // Column widths
+        ws['!cols'] = [
+            { wch: 16 },  // Marca
+            { wch: 55 },  // Producto
+            { wch: 10 },  // BTU
+            { wch: 12 },  // Tipo
+            { wch: 20 },  // Precio Regular
+            { wch: 20 },  // Precio Final
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Catálogo GG');
+
+        // One sheet per brand
+        for (const brand of brands) {
+            const brandRows: any[][] = [
+                ['Producto', 'BTU', 'Tipo', 'Precio Regular (Gs.)', 'Precio Final (Gs.)']
+            ];
+            for (const p of data[brand]) {
+                brandRows.push([
+                    p.name,
+                    p.btu,
+                    p.is_inverter ? 'INVERTER' : 'ON/OFF',
+                    p.regular_price || '',
+                    p.price
+                ]);
+            }
+            const brandWs = XLSX.utils.aoa_to_sheet(brandRows);
+            brandWs['!cols'] = [
+                { wch: 55 },
+                { wch: 10 },
+                { wch: 12 },
+                { wch: 20 },
+                { wch: 20 },
+            ];
+            // Safe sheet name (max 31 chars)
+            const safeName = brand.substring(0, 31);
+            XLSX.utils.book_append_sheet(wb, brandWs, safeName);
+        }
+
+        const now = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(wb, `Catalogo_GG_${now}.xlsx`);
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -51,11 +122,20 @@ export const GGCatalog = () => {
 
     return (
         <div className="mt-6">
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white">Catálogo Gonzalez Gimenez: Aires Acondicionados</h2>
-                <p className="text-slate-400 mt-1">
-                    Visualización cruda de {totalProducts} productos extraídos, agrupados por marca.
-                </p>
+            <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-white">Catálogo Gonzalez Gimenez: Aires Acondicionados</h2>
+                    <p className="text-slate-400 mt-1">
+                        Visualización cruda de {totalProducts} productos extraídos, agrupados por marca.
+                    </p>
+                </div>
+                <button
+                    onClick={downloadExcel}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium shadow-lg transition-all text-white bg-blue-600 hover:bg-blue-500 shadow-blue-900/20 hover:shadow-blue-800/30 self-start"
+                >
+                    <Download size={18} />
+                    Descargar Excel
+                </button>
             </div>
 
             <div className="grid grid-cols-1 gap-8">

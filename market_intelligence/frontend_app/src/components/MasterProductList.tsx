@@ -35,8 +35,10 @@ export const MasterProductList = ({ products }) => {
                             <th className="p-4">Producto</th>
                             <th className="p-4 text-center">Match</th>
                             <th className="p-4 text-right">Visuar</th>
+                            <th className="p-4 text-right">Costo V.</th>
+                            <th className="p-4 text-right">Rentab.</th>
                             <th className="p-4 text-right">GG</th>
-                            <th className="p-4 text-right">Diferencia</th>
+                            <th className="p-4 text-right">M. Competitivo</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -67,6 +69,16 @@ export const MasterProductList = ({ products }) => {
                                     <td className="p-4 text-right">
                                         <span className="font-bold text-indigo-400">Gs. {product.visuar_price}</span>
                                     </td>
+                                    <td className="p-4 text-right text-slate-400">
+                                        {product.internal_cost ? `Gs. ${formatter.format(product.internal_cost)}` : '-'}
+                                    </td>
+                                    <td className="p-4 text-right">
+                                        {product.real_margin_percent !== null && product.real_margin_percent !== undefined ? (
+                                            <span className={`font-bold ${product.real_margin_percent > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {product.real_margin_percent > 0 ? '+' : ''}{product.real_margin_percent.toFixed(1)}%
+                                            </span>
+                                        ) : '-'}
+                                    </td>
                                     <td className="p-4 text-right">
                                         {product.gg_price ? (
                                             <span className="font-bold text-blue-400">
@@ -90,7 +102,7 @@ export const MasterProductList = ({ products }) => {
                                 {/* Expandible */}
                                 {expandedRow === product.id && (
                                     <tr className="bg-slate-950 border-b border-slate-800">
-                                        <td colSpan={6} className="p-6">
+                                        <td colSpan={8} className="p-6">
                                             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Detalle de Competencia</h4>
                                             {product.competitors.length > 0 ? (
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

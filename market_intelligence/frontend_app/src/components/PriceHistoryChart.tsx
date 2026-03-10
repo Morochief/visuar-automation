@@ -12,39 +12,32 @@ interface ComparisonRow {
     status: 'WIN' | 'LOSS' | 'EQUAL' | 'NO_DATA';
 }
 
-export const PriceHistoryChart = () => {
+export const PriceHistoryChart = ({ data = [] }: { data?: any[] }) => {
     const [comparisons, setComparisons] = useState<ComparisonRow[]>([]);
     const [filter, setFilter] = useState<'ALL' | 'WIN' | 'LOSS'>('ALL');
 
     useEffect(() => {
-        fetch('/api/data.json')
-            .then(res => res.json())
-            .then(apiData => {
-                const rows = apiData.rows || apiData;
+        // Only include rows that have both prices (gg_price exists)
+        const matched: ComparisonRow[] = data
+            .filter((r: any) => r.gg_price != null)
+            .map((r: any) => ({
+                name: r.name,
+                brand: r.brand,
+                btu: r.btu,
+                visuarPrice: r.visuar_price,
+                ggPrice: r.gg_price,
+                ggName: r.gg_name,
+                diffPercent: r.diff_percent,
+                status: r.status === 'WIN' ? 'WIN' : r.status === 'LOSS' ? 'LOSS' : 'EQUAL'
+            }))
+            .sort((a: ComparisonRow, b: ComparisonRow) => {
+                const aDiff = Math.abs(a.diffPercent || 0);
+                const bDiff = Math.abs(b.diffPercent || 0);
+                return bDiff - aDiff;
+            });
 
-                // Only include rows that have both prices and exact/partial match
-                const matched: ComparisonRow[] = rows
-                    .filter((r: any) => r.gg_price && (r.match_level === 'EXACTO' || r.match_level === 'PARCIAL'))
-                    .map((r: any) => ({
-                        name: r.name,
-                        brand: r.brand,
-                        btu: r.btu,
-                        visuarPrice: r.visuar_price,
-                        ggPrice: r.gg_price,
-                        ggName: r.gg_name,
-                        diffPercent: r.diff_percent,
-                        status: r.status === 'WIN' ? 'WIN' : r.status === 'LOSS' ? 'LOSS' : 'EQUAL'
-                    }))
-                    .sort((a: ComparisonRow, b: ComparisonRow) => {
-                        const aDiff = Math.abs(a.diffPercent || 0);
-                        const bDiff = Math.abs(b.diffPercent || 0);
-                        return bDiff - aDiff;
-                    });
-
-                setComparisons(matched);
-            })
-            .catch(console.error);
-    }, []);
+        setComparisons(matched);
+    }, [data]);
 
     const formatter = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 });
 
@@ -56,7 +49,7 @@ export const PriceHistoryChart = () => {
     const losses = comparisons.filter(c => c.status === 'LOSS').length;
     const totalMatched = comparisons.length;
 
-    if (comparisons.length === 0) {
+    if (data.length === 0) {
         return (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl mt-6 p-6">
                 <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
@@ -65,6 +58,20 @@ export const PriceHistoryChart = () => {
                 </h3>
                 <div className="flex items-center justify-center h-32">
                     <p className="text-slate-400">Cargando datos de comparacion...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (comparisons.length === 0) {
+        return (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl mt-6 p-6">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                    <BarChart3 className="text-indigo-400" size={22} />
+                    Comparacion Actual: Visuar vs GG
+                </h3>
+                <div className="flex items-center justify-center h-32 bg-slate-950/50 rounded-xl mt-6 border border-slate-800/80">
+                    <p className="text-slate-400 italic">No hay productos exactos comparables en González Giménez en este momento.</p>
                 </div>
             </div>
         );

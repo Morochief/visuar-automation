@@ -4,6 +4,8 @@ import threading
 import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from sqlalchemy import create_engine, text
+import math
 
 # ============================================================
 # VISUAR MARKET INTELLIGENCE - API SERVER
@@ -20,6 +22,11 @@ logging.basicConfig(
 )
 
 JSON_OUTPUT_DIR = os.environ.get("JSON_OUTPUT_DIR", "/app/output")
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///data/market_intel.db")
+
+# TODO (Tech Debt): Implement Flask-Caching here (e.g., Cache(app, config={'CACHE_TYPE': 'simple'})) 
+# and use @cache.cached(timeout=300) on /api/live_data when traffic increases to prevent DB spam.
+engine = create_engine(DATABASE_URL)
 
 # ── Scrape State ────────────────────────────────────────────
 _scrape_state = {
@@ -33,13 +40,14 @@ _scrape_lock = threading.Lock()
 def _run_scrape_thread():
     """Execute pipeline in a background thread."""
     import asyncio
-    from pipeline import run_pipeline
+    from scraper import MarketIntelligenceEngine
 
     global _scrape_state
 
     try:
         logger.info("[API] Background scrape started")
-        result = asyncio.run(run_pipeline())
+        engine_obj = MarketIntelligenceEngine()
+        result = asyncio.run(engine_obj.run_pipeline())
         with _scrape_lock:
             _scrape_state["last_result"] = result
             _scrape_state["error"] = None
@@ -55,6 +63,70 @@ def _run_scrape_thread():
 
 
 # ── Endpoints ───────────────────────────────────────────────
+
+@app.route('/api/live_data', methods=['GET'])
+def get_live_data():
+    """Fetches real-time market margins with pagination."""
+    try:
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 50))
+        offset = (page - 1) * limit
+        
+        with engine.connect() as conn:
+            # Query the view opportunity_margin_vw
+            query = text('''
+                SELECT 
+                    product_id, name, brand, capacity_btu, internal_cost,
+                    visuar_price, bristol_price, gg_price, gg_name, real_margin_percent,
+                    diff_percent, status, last_updated
+                FROM opportunity_margin_vw
+                ORDER BY 
+                    -- Sort by LOSS first, then margin
+                    CASE WHEN status = 'LOSS' THEN 0 ELSE 1 END ASC,
+                    ABS(diff_percent) DESC NULLS LAST
+                LIMIT :limit OFFSET :offset
+            ''')
+            
+            result = conn.execute(query, {"limit": limit, "offset": offset})
+            
+            rows = []
+            for r in result:
+                rows.append({
+                    "id": str(r.product_id),
+                    "name": r.name,
+                    "brand": r.brand,
+                    "btu": r.capacity_btu,
+                    "internal_cost": float(r.internal_cost) if r.internal_cost is not None else None,
+                    "visuar_price": float(r.visuar_price) if r.visuar_price is not None else None,
+                    "gg_price": float(r.gg_price) if r.gg_price is not None else None,
+                    "gg_name": r.gg_name,
+                    "lowest_comp": float(r.bristol_price) if r.bristol_price is not None else None,
+                    "real_margin_percent": float(r.real_margin_percent) if r.real_margin_percent is not None else None,
+                    "diff_percent": float(r.diff_percent) if r.diff_percent is not None else None,
+                    "status": r.status,
+                    "last_updated": r.last_updated.isoformat() if r.last_updated else None
+                })
+            
+            # Get total count
+            count_query = text('SELECT COUNT(*) FROM opportunity_margin_vw')
+            total = conn.execute(count_query).scalar()
+            
+            stats = {
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "total_pages": math.ceil(total / limit) if limit > 0 else 0
+            }
+            
+            return jsonify({
+                "rows": rows,
+                "stats": stats
+            }), 200
+
+    except Exception as e:
+        logger.error(f"[API] Error fetching live data: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/health', methods=['GET'])
 def health():

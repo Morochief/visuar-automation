@@ -16,7 +16,7 @@ services:
       dockerfile: Dockerfile
     container_name: visuar_scraper
     environment:
-      - DATABASE_URL=sqlite:///app/data/market_intel.db
+      - DATABASE_URL=postgresql://visuar_admin:visuar_pass@postgres:5432/market_intel_db
       - JSON_OUTPUT_DIR=/app/output
       - API_PORT=5000
       - PYTHONUNBUFFERED=1
@@ -31,6 +31,31 @@ services:
         limits:
           memory: 2G
           cpus: '1.0'
+
+  # ─────────────────────────────────────────────────
+  # DATABASE: PostgreSQL 15
+  # Engine for market intelligence history & metrics
+  # ─────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: visuar_postgres
+    environment:
+      - POSTGRES_USER=visuar_admin
+      - POSTGRES_PASSWORD=visuar_pass
+      - POSTGRES_DB=market_intel_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - visuar_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U visuar_admin -d market_intel_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ─────────────────────────────────────────────────
   # FRONTEND: Astro + React SSR Dashboard
@@ -69,8 +94,8 @@ services:
     image: nginx:alpine
     container_name: visuar_proxy
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "4443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
@@ -88,6 +113,8 @@ services:
           cpus: '0.25'
 
 volumes:
+  pgdata:
+    driver: local
   scraper_data:
     driver: local
   shared_json:
