@@ -1,8 +1,8 @@
 import asyncio
 import json
-import os
 import logging
 import re
+import time
 from datetime import datetime, timezone
 from typing import Optional, List, Dict
 
@@ -27,11 +27,60 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ingestion_engine")
 
+
+async def retry_with_backoff(func, max_retries=3, base_delay=2):
+    """
+    Execute a function with exponential backoff retry logic.
+    
+    Args:
+        func: The async function to execute
+        max_retries: Maximum number of retry attempts (default: 3)
+        base_delay: Base delay in seconds before first retry (default: 2)
+    
+    Returns:
+        The result of the function, or raises the last exception if all retries fail
+    """
+    last_exception = None
+    for attempt in range(max_retries):
+        try:
+            return await func()
+        except Exception as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)  # Exponential backoff: 2, 4, 8 seconds
+                logger.warning(f"[RETRY] Attempt {attempt + 1}/{max_retries} failed: {e}. Retrying in {delay}s...")
+                await asyncio.sleep(delay)
+            else:
+                logger.error(f"[RETRY] All {max_retries} attempts failed: {e}")
+    if last_exception:
+        raise last_exception
+    raise Exception("Function failed without exceptions")
+
 class MarketIntelligenceEngine:
     def __init__(self):
         self.engine = create_engine(DATABASE_URL)
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
+        self.progress = {
+            "current_source": "Idle",
+            "current_item": 0,
+            "total_items": 0,
+            "phase": "Waiting",
+            "percentage": 0
+        }
+
+    def _update_progress(self, source=None, current=None, total=None, phase=None):
+        if source: self.progress["current_source"] = source
+        if current is not None: self.progress["current_item"] = current
+        if total is not None: self.progress["total_items"] = total
+        if phase: self.progress["phase"] = phase
+        
+        if self.progress["total_items"] > 0:
+            self.progress["percentage"] = round((self.progress["current_item"] / self.progress["total_items"]) * 100)
+        else:
+            self.progress["percentage"] = 0
+        
+        logger.info(f"[PROGRESS] {self.progress['phase']} | {self.progress['current_source']}: {self.progress['current_item']}/{self.progress['total_items']} ({self.progress['percentage']}%)")
 
     def _normalize_btu(self, title: str) -> Optional[int]:
         title_lower = title.lower()
@@ -201,11 +250,49 @@ class MarketIntelligenceEngine:
                 comp_v = session.query(Competitor).filter_by(name='Visuar').first()
                 if comp_v:
                     visuar_log.competitor_id = comp_v.id
+                self._update_progress(source="Visuar", phase="Scraping", current=0, total=0)
                 logger.info("Connecting to Visuar...")
-                await page.goto("https://www.visuar.com.py/hogar/aires-acondicionados/", wait_until="networkidle")
-                visuar_data = await self._scraped_results_visuar(page)
+                
+                async def visit_visuar():
+                    await page.goto("https://www.visuar.com.py/hogar/aires-acondicionados/", wait_until="networkidle")
+                    
+                    # Auto-pagination: Scroll and click "Load More"
+                    seen_urls = set()
+                    all_results = []
+                    
+                    while True:
+                        await page.mouse.wheel(0, 2000)
+                        await page.wait_for_timeout(1000)
+                        
+                        # Extract current page items
+                        current_results = await self._scraped_results_visuar(page)
+                        for r in current_results:
+                            if r["url"] not in seen_urls:
+                                seen_urls.add(r["url"])
+                                all_results.append(r)
+                                
+                        try:
+                            # Attempt to find the standard Prestashop pagination/infinite-scroll trigger
+                            load_more = await page.query_selector('.next.js-search-link, .infinite-scroll-button')
+                            if load_more:
+                                is_vis = await load_more.is_visible()
+                                if is_vis:
+                                    await load_more.click()
+                                    await page.wait_for_timeout(3000) # Wait for network payload / page reload
+                                else:
+                                    break # Reached the end of the catalog
+                            else:
+                                break # Reached the end of the catalog
+                        except Exception as e:
+                            logger.error(f"[VISUAR] Exception in pagination: {e}")
+                            break
+                            
+                    return all_results
+                
+                visuar_data = await retry_with_backoff(visit_visuar, max_retries=3)
                 visuar_log.status = 'success'
                 visuar_log.products_scraped = len(visuar_data)
+                self._update_progress(source="Visuar", current=len(visuar_data), total=len(visuar_data))
                 logger.info(f"[SOURCE_A] Ingested {len(visuar_data)} records from Visuar")
             except Exception as e:
                 visuar_log.error_message = str(e)
@@ -221,16 +308,22 @@ class MarketIntelligenceEngine:
                 comp_b = session.query(Competitor).filter_by(name='Bristol').first()
                 if comp_b:
                     bristol_log.competitor_id = comp_b.id
+                self._update_progress(source="Bristol", phase="Scraping", current=0, total=0)
                 logger.info("Connecting to Bristol...")
-                await page.goto("https://www.bristol.com.py/climatizacion/climatizacion/splits", wait_until="networkidle")
-                try:
-                    await page.wait_for_selector('#catalogoProductos .it', timeout=10000)
-                    await page.wait_for_timeout(2000)
-                except Exception as e:
-                    logger.warning(f"Timeout waiting for elements on Bristol: {e}")
-                bristol_data = await self._scraped_results_bristol(page)
+                
+                async def visit_bristol():
+                    await page.goto("https://www.bristol.com.py/climatizacion/climatizacion/splits", wait_until="networkidle")
+                    try:
+                        await page.wait_for_selector('#catalogoProductos .it', timeout=10000)
+                        await page.wait_for_timeout(2000)
+                    except Exception as e:
+                        logger.warning(f"Timeout waiting for elements on Bristol: {e}")
+                    return await self._scraped_results_bristol(page)
+                
+                bristol_data = await retry_with_backoff(visit_bristol, max_retries=3)
                 bristol_log.status = 'success'
                 bristol_log.products_scraped = len(bristol_data)
+                self._update_progress(source="Bristol", current=len(bristol_data), total=len(bristol_data))
                 logger.info(f"[SOURCE_B] Ingested {len(bristol_data)} records from Bristol")
             except Exception as e:
                 bristol_log.error_message = str(e)
@@ -246,24 +339,31 @@ class MarketIntelligenceEngine:
                 comp_g = session.query(Competitor).filter_by(name='Gonzalez Gimenez').first()
                 if comp_g:
                     gg_log.competitor_id = comp_g.id
+                self._update_progress(source="Gonzalez Gimenez", phase="Scraping", current=0, total=0)
                 logger.info("Connecting to Gonzalez Gimenez...")
                 # Set a more realistic User-Agent
                 await context.set_extra_http_headers({
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                 })
-                await page.goto("https://www.gonzalezgimenez.com.py/categoria/127/acondicionadores-de-aire", wait_until="domcontentloaded")
-                try:
-                    await page.wait_for_selector('.item-catalogo', timeout=60000)
-                    # Scroll tiered to bypass lazy loading
-                    for i in range(1, 5):
-                        await page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {i/4})")
-                        await page.wait_for_timeout(2000)
-                except Exception as e:
-                    logger.warning(f"Timeout waiting for elements on GG: {e}")
-                    await page.screenshot(path='/app/output/gg_debug.png')
-                gg_data = await self._scraped_results_gg(page)
+                
+                async def visit_gg():
+                    await page.goto("https://www.gonzalezgimenez.com.py/categoria/127/acondicionadores-de-aire", wait_until="domcontentloaded")
+                    try:
+                        await page.wait_for_selector('.item-catalogo', timeout=60000)
+                        # Scroll tiered to bypass lazy loading
+                        for i in range(1, 5):
+                            self._update_progress(current=i, total=4, phase="Scrolling GG")
+                            await page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {i/4})")
+                            await page.wait_for_timeout(2000)
+                    except Exception as e:
+                        logger.warning(f"Timeout waiting for elements on GG: {e}")
+                        await page.screenshot(path='/app/output/gg_debug.png')
+                    return await self._scraped_results_gg(page)
+                
+                gg_data = await retry_with_backoff(visit_gg, max_retries=3)
                 gg_log.status = 'success'
                 gg_log.products_scraped = len(gg_data)
+                self._update_progress(source="Gonzalez Gimenez", current=len(gg_data), total=len(gg_data), phase="Scraping Complete")
                 logger.info(f"[SOURCE_C] Ingested {len(gg_data)} records from Gonzalez Gimenez")
             except Exception as e:
                 gg_log.error_message = str(e)
@@ -406,11 +506,13 @@ class MarketIntelligenceEngine:
             if not unmatched: return
             
             logger.info(f"[DEEP_SCRAPE] Processing {len(unmatched)} items...")
+            self._update_progress(source="Deep Scrape", phase="Processing Details", current=0, total=len(unmatched))
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page()
-                for cp in unmatched:
+                for idx, cp in enumerate(unmatched):
                     try:
+                        self._update_progress(current=idx + 1, total=len(unmatched))
                         logger.info(f"[DEEP_SCRAPE] Item: {cp.name}")
                         await page.goto(cp.url, wait_until="networkidle", timeout=20000)
                         

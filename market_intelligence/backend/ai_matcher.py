@@ -30,9 +30,14 @@ logger = logging.getLogger("ai_matcher")
 # ─── NVIDIA API Configuration ───────────────────────────────────────
 
 NVIDIA_API_KEY = os.environ.get(
-    "NVIDIA_API_KEY",
-    "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"
+    "NVIDIA_API_KEY"
 )
+
+if not NVIDIA_API_KEY:
+    raise ValueError(
+        "NVIDIA_API_KEY environment variable is required for AI matching. "
+        "Please set it in your .env file or deployment environment."
+    )
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 NVIDIA_MODEL = "deepseek-ai/deepseek-v3.2"
 
@@ -40,14 +45,34 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///data/market_intel.db")
 
 # ─── Prompt Engineering ─────────────────────────────────────────────
 
-SYSTEM_PROMPT = """Eres un experto en productos electrónicos y electrodomésticos (Aires Acondicionados) para el mercado paraguayo.
-Tu tarea es realizar un matching semántico de alta precisión entre productos de competidores y el catálogo de Visuar.
+SYSTEM_PROMPT = """Eres un experto en productos de Aires Acondicionados para el mercado paraguayo.
+Tu tarea es realizar un matching строго(strict) entre productos de competidores y el catálogo de Visuar.
 
-Prioridades de matching:
-1. **SKU/Modelo:** Si el SKU o código de referencia coincide exactamente o es una sub-cadena clara (ej: "AR12BSHQAWK"), el match es casi seguro (95%+).
-2. **Capacidad y Tecnología:** Deben coincidir BTU (ej: 12000 vs 12.000) e Inverter vs On/Off.
-3. **Características Técnicas:** Compara descripciones. Si uno menciona "Gas Ecológico R410A" y "Kit de instalación", busca esas pistas en los candidatos.
-4. **Marca:** Considera variaciones de marca (ej: "Midas" vs "Midea" pueden ser diferentes o errores de carga, usa tu conocimiento para distinguir).
+**REGLAS OBLIGATORIAS (NO puedes violar estas reglas):**
+1. **MARCA IDÉNTICA**: El producto del competidor DEBE ser de la MISMA marca que el producto de Visuar.
+   - Si el competidor es "Goodweather", solo puede matching con productos Goodweather de Visuar.
+   - Si el competidor es "LG", solo puede matching con productos LG de Visuar.
+   - Si el competidor es "Samsung", solo puede matching con productos Samsung de Visuar.
+   - **CUALQUIER match con marca diferente es INCORRECTO y debe tener confidence 0%**.
+2. **TIPO DE PRODUCTO**: El tipo debe coincidir:
+   - Split/Pared solo con Split/Pared
+   - Cassette solo con Cassette
+   - Piso/Techo solo con Piso/Techo
+   - Portátil solo con Portátil
+3. **BTU**: Debe coincidir la capacidad (misma o muy similar).
+4. **TECNOLOGÍA**: Inverter debe matching con Inverter.
+
+**Ejemplos de matches INCORRECTOS (confidence = 0%):**
+- Haustec → Goodweather = INCORRECTO (marcas diferentes)
+- LG → Samsung = INCORRECTO (marcas diferentes)
+- Oster → Midas = INCORRECTO (marcas diferentes)
+- Split → Portátil = INCORRECTO (tipos diferentes)
+- Split → Cassette = INCORRECTO (tipos diferentes)
+
+**Ejemplos de matches CORRECTOS:**
+- Goodweather 12000 Inverter → Goodweather 12000 Inverter = 95%+
+- LG Artcool 18000 → LG Artcool 18000 = 95%+
+- Midea 12000 → Midea 12000 = 90%+
 
 Responde SIEMPRE en formato JSON válido."""
 
@@ -87,18 +112,32 @@ def _call_deepseek(prompt: str) -> Optional[dict]:
     try:
         client = OpenAI(base_url=NVIDIA_BASE_URL, api_key=NVIDIA_API_KEY)
 
+        # Deep thinking mode via streaming for maximum accuracy
         completion = client.chat.completions.create(
             model=NVIDIA_MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
             ],
-            temperature=0.1,  # Low temperature for deterministic matching
+            temperature=0.1,
             top_p=0.95,
-            max_tokens=512,
+            max_tokens=8192,
+            extra_body={"chat_template_kwargs": {"thinking": True}},
+            stream=True
         )
 
-        raw_response = completion.choices[0].message.content.strip()
+        # Collect streamed response
+        raw_response = ""
+        for chunk in completion:
+            if not getattr(chunk, "choices", None):
+                continue
+            reasoning = getattr(chunk.choices[0].delta, "reasoning_content", None)
+            if reasoning:
+                logger.debug(f"[AI_MATCHER] Thinking: {reasoning[:100]}...")
+            if chunk.choices and chunk.choices[0].delta.content is not None:
+                raw_response += chunk.choices[0].delta.content
+
+        raw_response = raw_response.strip()
 
         # Strip markdown code fences if present
         if raw_response.startswith("```"):
@@ -204,11 +243,18 @@ def run_ai_matching(session: Session, min_confidence: int = 60):
                 logger.warning(f"[AI_MATCHER] AI returned non-existent product ID {best_match_id}")
                 failed_count += 1
                 continue
-
-            # Auto-apply if confidence is very high (e.g. >= 85)
-            if confidence >= 85:
+            
+            # Check brand matching before auto-approve
+            competitor_brand = cp.raw_brand or ""
+            visuar_brand = canonical.brand or ""
+            brand_match = competitor_brand.lower().strip() == visuar_brand.lower().strip()
+            
+            # Only auto-apply if confidence is very high (>= 90) AND brands match
+            if confidence >= 90 and brand_match:
                 cp.product_id = best_match_id
-                logger.info(f"[AI_MATCHER] AUTO-APPLIED match for '{cp.name}' (Confidence: {confidence}%)")
+                logger.info(f"[AI_MATCHER] AUTO-APPLIED match for '{cp.name}' (Confidence: {confidence}%, Brand match: {brand_match})")
+            elif confidence >= 90 and not brand_match:
+                logger.info(f"[AI_MATCHER] SKIPPED auto-apply for '{cp.name}' - brands don't match: '{competitor_brand}' vs '{visuar_brand}'")
 
             # Replace existing pending mapping
             session.query(PendingMapping).filter_by(competitor_product_id=cp.id).delete()

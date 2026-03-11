@@ -28,7 +28,7 @@ export default function Dashboard() {
     const sumLosses = rows.filter(r => r.status === 'LOSS').reduce((acc, curr) => acc + curr.diff_percent, 0);
     const avgLoss = totalLosses > 0 ? (sumLosses / totalLosses).toFixed(2) : '0.00';
 
-    const sumWins = rows.filter(r => r.status === 'WIN' && curr.diff_percent !== null).reduce((acc, curr) => acc + curr.diff_percent, 0);
+    const sumWins = rows.filter(r => r.status === 'WIN' && r.diff_percent !== null).reduce((acc, curr) => acc + curr.diff_percent, 0);
     const avgWin = totalWins > 0 ? Math.abs(sumWins / totalWins).toFixed(2) : '0.00';
 
     return (

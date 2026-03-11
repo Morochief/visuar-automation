@@ -129,7 +129,17 @@ def evaluate_alerts(session: Session):
     Called by scraper.py after a successful scraping cycle.
     """
     # We need to decrypt contact_info using the secret key
-    enc_key = os.environ.get('ENCRYPTION_KEY', 'dev_key')
+    enc_key = os.environ.get('ENCRYPTION_KEY')
+    
+    if not enc_key:
+        import sys
+        logger.error("[ALERT_ENGINE] ENCRYPTION_KEY environment variable is not set!")
+        logger.error("[ALERT_ENGINE] Alert evaluation cannot proceed without encryption key.")
+        # In production, we should fail. In development, warn but continue.
+        if os.environ.get('FLASK_ENV') == 'production':
+            sys.exit(1)
+        logger.warning("[ALERT_ENGINE] Using fallback 'dev_key' for development only!")
+        enc_key = 'dev_key'
     
     # Query rules and decrypt contact_info at the database level
     active_rules_data = (

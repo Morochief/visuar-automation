@@ -9,6 +9,7 @@ import { GGCatalog } from './GGCatalog';
 export default function Dashboard() {
     const [activeTab, setActiveTab] = useState('MAIN');
     const [rows, setRows] = useState([]);
+    const [dashboardStats, setDashboardStats] = useState(null);
     const [scrapedData, setScrapedData] = useState<{ visuar: any[], gg: any[] }>({ visuar: [], gg: [] });
 
     // Pagination
@@ -33,14 +34,25 @@ export default function Dashboard() {
             if (!response.ok) throw new Error('Error en API en vivo');
             
             const data = await response.json();
-            setRows(data.rows || []);
+            const validRows = Array.isArray(data.rows) ? data.rows : [];
+            setRows(validRows);
+            setDashboardStats(data.stats || null);
             setTotalPages(data.stats?.total_pages || 1);
 
             // Fetch static scraped catalog datasets used by Comparador Libre and standalone logs
             // TODO (Tech Debt): Refactor catalog endpoints to also use live DB queries later.
-            const scrapedRes = await fetch('/api/scraped_data.json');
-            const scData = await scrapedRes.json();
-            setScrapedData(scData);
+            try {
+                const scrapedRes = await fetch('/api/scraped_data.json');
+                if (scrapedRes.ok) {
+                    const scData = await scrapedRes.json();
+                    setScrapedData({
+                        visuar: Array.isArray(scData.visuar) ? scData.visuar : [],
+                        gg: Array.isArray(scData.gg) ? scData.gg : []
+                    });
+                }
+            } catch (e) {
+                console.warn('Scraped data json not found, using empty defaults');
+            }
 
             // Load last scrape timestamp
             try {
@@ -52,7 +64,12 @@ export default function Dashboard() {
                     }
                     if (status.scraping) {
                         setScraping(true);
-                        setScrapeMessage('Scraping en progreso...');
+                        const p = status.progress;
+                        if (p) {
+                            setScrapeMessage(`${p.phase}: ${p.current_source} (${p.current_item}/${p.total_items})`);
+                        } else {
+                            setScrapeMessage('Scraping en progreso...');
+                        }
                         pollScrapeStatus();
                     }
                 }
@@ -61,7 +78,7 @@ export default function Dashboard() {
             }
         } catch (e) {
             console.error(e);
-            setDataError('No se pudo conectar con la base de datos PostgreSQL. Verifica que el backend esté en ejecución.');
+            setDataError('No se pudo conectar con el backend. Verifica que el servidor de la API esté en ejecución.');
         }
         setLoading(false);
     };
@@ -72,7 +89,14 @@ export default function Dashboard() {
                 const res = await fetch('/backend/api/status');
                 if (res.ok) {
                     const status = await res.json();
-                    if (!status.scraping) {
+                    if (status.scraping) {
+                        const p = status.progress;
+                        if (p) {
+                            setScrapeMessage(`${p.phase} ${p.current_source}: ${p.current_item}/${p.total_items || '?'}`);
+                        } else {
+                            setScrapeMessage('Scraping en progreso...');
+                        }
+                    } else {
                         clearInterval(interval);
                         setScraping(false);
                         if (status.error) {
@@ -123,14 +147,16 @@ export default function Dashboard() {
         loadData();
     }, []);
 
-    const totalWins = rows.filter((r: any) => r.status === 'WIN').length;
-    const totalLosses = rows.filter((r: any) => r.status === 'LOSS').length;
+    const safeRows = Array.isArray(rows) ? rows : [];
+
+    const totalWins = safeRows.filter((r: any) => r.status === 'WIN').length;
+    const totalLosses = safeRows.filter((r: any) => r.status === 'LOSS').length;
 
     // Calcular promedios para KPIs
-    const sumLosses = rows.filter((r: any) => r.status === 'LOSS').reduce((acc: number, curr: any) => acc + curr.diff_percent, 0);
+    const sumLosses = safeRows.filter((r: any) => r.status === 'LOSS').reduce((acc: number, curr: any) => acc + (curr.diff_percent || 0), 0);
     const avgLoss = totalLosses > 0 ? (sumLosses / totalLosses).toFixed(2) : '0.00';
 
-    const sumWins = rows.filter((r: any) => r.status === 'WIN' && r.diff_percent !== null).reduce((acc: number, curr: any) => acc + curr.diff_percent, 0);
+    const sumWins = safeRows.filter((r: any) => r.status === 'WIN' && r.diff_percent !== null).reduce((acc: number, curr: any) => acc + (curr.diff_percent || 0), 0);
     const avgWin = totalWins > 0 ? Math.abs(sumWins / totalWins).toFixed(2) : '0.00';
 
     return (
@@ -229,7 +255,7 @@ export default function Dashboard() {
                         ) : (
                             <>
                                 {/* Dashboard KPIs */}
-                                <DashboardKPIs />
+                                {dashboardStats && <DashboardKPIs stats={dashboardStats} />}
                                 <PriceHistoryChart data={rows} />
 
                                 {/* Tabla de Datos Premium */}
@@ -240,9 +266,9 @@ export default function Dashboard() {
                                     gg_price: row.gg_price,
                                     best_competitor: row.gg_name || 'Sin competencia',
                                     diff_percent: row.diff_percent || 0,
-                                    match_level: row.gg_price ? 'EXACTO' : 'NINGUNO',
-                                    match_label: row.gg_price ? 'Match BD' : 'Sin Match',
-                                    match_color: row.gg_price ? 'green' : 'red',
+                                    match_level: row.match_level || (row.gg_price ? 'EXACTO' : 'NINGUNO'),
+                                    match_label: row.match_label || (row.gg_price ? 'Match BD' : 'Sin Match'),
+                                    match_color: row.match_color || (row.gg_price ? 'green' : 'red'),
                                     match_percentage: row.gg_price ? 100 : 0,
                                     real_margin_percent: row.real_margin_percent,
                                     competitors: row.gg_price ? [{ name: 'Gonzalez Gimenez', price: row.gg_price?.toLocaleString('es-PY'), diff: row.diff_percent, raw_name: row.gg_name }] : []

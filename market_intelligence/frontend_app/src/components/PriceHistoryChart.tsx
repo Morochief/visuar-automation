@@ -91,7 +91,7 @@ export const PriceHistoryChart = ({ data = [] }: { data?: any[] }) => {
                         Comparacion Actual: Visuar vs GG
                     </h3>
                     <p className="text-slate-500 text-sm mt-1">
-                        {totalMatched} productos comparables encontrados
+                        Mostrando {totalMatched} productos con precio exacto en González Giménez (de la métrica global)
                     </p>
                 </div>
 

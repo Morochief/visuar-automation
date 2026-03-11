@@ -32,7 +32,8 @@ engine = create_engine(DATABASE_URL)
 _scrape_state = {
     "running": False,
     "last_result": None,
-    "error": None
+    "error": None,
+    "progress": None
 }
 _scrape_lock = threading.Lock()
 
@@ -47,10 +48,28 @@ def _run_scrape_thread():
     try:
         logger.info("[API] Background scrape started")
         engine_obj = MarketIntelligenceEngine()
+        
+        # Periodic progress update task in a separate thread/loop if possible, 
+        # or just pass a callback to the engine. For now, let's use a shared ref or simple loop.
+        def update_local_progress():
+            while True:
+                with _scrape_lock:
+                    if not _scrape_state["running"]:
+                        break
+                    _scrape_state["progress"] = engine_obj.progress
+                import time
+                time.sleep(1)
+
+        progress_thread = threading.Thread(target=update_local_progress, daemon=True)
+        progress_thread.start()
+
         result = asyncio.run(engine_obj.run_pipeline())
+        
+        # Use lock for thread-safe state update
         with _scrape_lock:
             _scrape_state["last_result"] = result
             _scrape_state["error"] = None
+            _scrape_state["progress"] = engine_obj.progress
         logger.info(f"[API] Background scrape completed: {result}")
     except Exception as e:
         logger.error(f"[API] Scrape failed: {e}", exc_info=True)
@@ -111,11 +130,42 @@ def get_live_data():
             count_query = text('SELECT COUNT(*) FROM opportunity_margin_vw')
             total = conn.execute(count_query).scalar()
             
+            # Additional KPI metrics from DB
+            metrics_query = text('''
+                SELECT 
+                    SUM(CASE WHEN status = 'WIN' THEN 1 ELSE 0 END) as wins,
+                    SUM(CASE WHEN status = 'LOSS' THEN 1 ELSE 0 END) as losses,
+                    AVG(CASE WHEN status = 'LOSS' THEN diff_percent ELSE NULL END) as avg_diff
+                FROM opportunity_margin_vw
+            ''')
+            metrics = conn.execute(metrics_query).fetchone()
+            
+            match_query = text('''
+                SELECT count(DISTINCT product_id) 
+                FROM competitor_products 
+                WHERE competitor_id != (SELECT id FROM competitors WHERE name = 'Visuar')
+                  AND product_id IS NOT NULL
+            ''')
+            exact_match = conn.execute(match_query).scalar() or 0
+            
+            ai_query = text("SELECT count(DISTINCT suggested_product_id) FROM pending_mappings WHERE match_score >= 80")
+            ai_matched = conn.execute(ai_query).scalar() or 0
+            
+            total_products_query = text("SELECT count(*) FROM products")
+            total_products = conn.execute(total_products_query).scalar() or 0
+            
             stats = {
-                "total": total,
+                "total": total_products,
                 "page": page,
                 "limit": limit,
-                "total_pages": math.ceil(total / limit) if limit > 0 else 0
+                "total_pages": math.ceil(total / limit) if limit > 0 else 0,
+                "wins": int(metrics.wins) if metrics and metrics.wins else 0,
+                "losses": int(metrics.losses) if metrics and metrics.losses else 0,
+                "avgDiff": float(metrics.avg_diff) if metrics and metrics.avg_diff else 0.0,
+                "exact_match": exact_match,
+                "partial_match": 0,
+                "no_match": total_products - exact_match,
+                "ai_matched": ai_matched
             }
             
             return jsonify({
