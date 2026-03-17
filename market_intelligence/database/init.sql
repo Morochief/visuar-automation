@@ -160,6 +160,56 @@ CREATE TABLE alert_rules (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabla de marcas conocidas (para extracción y validación)
+CREATE TABLE brands (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    display_name VARCHAR(100),
+    is_active BOOLEAN DEFAULT TRUE,
+    is_known BOOLEAN DEFAULT TRUE, -- Marcas conocidas vs detectadas automáticamente
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed Marcas conocidas del mercado Paraguayo de Aires Acondicionados
+INSERT INTO brands (name, display_name, is_known) VALUES 
+('SAMSUNG', 'Samsung', true),
+('LG', 'LG', true),
+('MIDEA', 'Midea', true),
+('JAM', 'JAM', true),
+('WHIRLPOOL', 'Whirlpool', true),
+('CARRIER', 'Carrier', true),
+('TOKYO', 'Tokyo', true),
+('GOODWEATHER', 'Goodweather', true),
+('HAUSTEC', 'Haustec', true),
+('OSTER', 'Oster', true),
+('MIDAS', 'Midas', true),
+('ALTECH', 'Altech', true),
+('HISENSE', 'Hisense', true),
+('TCL', 'TCL', true),
+('SPEED', 'Speed', true),
+('MUELLER', 'Mueller', true),
+('ELECTROLUX', 'Electrolux', true),
+('HITACHI', 'Hitachi', true),
+('MABE', 'Mabe', true),
+('VCP', 'VCP', true),
+('CONTINENTAL', 'Continental', true),
+('AURORA', 'Aurora', true),
+('CONSUL', 'Consul', true),
+('FAMA', 'Fama', true)
+ON CONFLICT (name) DO NOTHING;
+
+-- Función para obtener marcas activas
+CREATE OR REPLACE FUNCTION get_active_brands()
+RETURNS TABLE(name VARCHAR(50), display_name VARCHAR(100)) AS $
+BEGIN
+    RETURN QUERY 
+    SELECT b.name, COALESCE(b.display_name, b.name)
+    FROM brands b
+    WHERE b.is_active = true
+    ORDER BY b.name;
+END;
+$ LANGUAGE plpgsql;
+
 -- Tabla para llevar el registro de notificaciones enviadas y snapshot de configuración
 CREATE TABLE notifications_log (
     id SERIAL PRIMARY KEY,

@@ -32,3 +32,15 @@
 - [x] Expose `progress` in `api_server.py`.
 - [x] Add defensive `Array.isArray` checks in React components.
 - [x] Update UI to show real-time scrape progress.
+
+## Phase 7: Performance & Extensibility [x]
+- [x] Add unit tests for `ai_matcher.py` (pytest).
+- [x] Implement Redis caching layer for API responses.
+- [x] Add `/health` endpoint with DB/Redis checks.
+- [x] Add `/metrics` endpoint for Prometheus monitoring.
+- [x] Move brand list to database (admin panel ready).
+- [x] Update documentation with new features.
+
+## Phase 8: Bug Fixes & Dashboard Visibility [x]
+- [x] Fixed "Last Scrape Time" not updating by syncing `scraper.py` with metadata updates.
+- [x] Documented the discrepancy and fix in `problemas_soluciones.md`.

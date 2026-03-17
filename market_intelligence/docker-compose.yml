@@ -26,14 +26,13 @@ services:
     volumes:
       - scraper_data:/app/data
       - shared_json:/app/output
+    ports:
+      - "5000:5000"
     restart: unless-stopped
-    networks:
-      - visuar_network
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
+    network_mode: host
+    extra_hosts:
+      - "postgres:host-gateway"
+      - "redis:host-gateway"
 
   # ─────────────────────────────────────────────────
   # DATABASE: PostgreSQL 15
@@ -76,6 +75,7 @@ services:
       - HOST=0.0.0.0
       - PORT=4321
       - DATABASE_URL=postgresql://visuar_admin:visuar_pass@postgres:5432/market_intel_db
+      - REDIS_HOST=redis
     volumes:
       - shared_json:/app/public/api
       - ./frontend_app/src:/app/src:ro
@@ -91,6 +91,11 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
+    extra_hosts:
+      - "postgres:host-gateway"
+      - "redis:host-gateway"
+      - "backend:host-gateway"
+      - "visuar_scraper:host-gateway"
 
   # ─────────────────────────────────────────────────
   # NGINX: Reverse Proxy
@@ -102,6 +107,7 @@ services:
     ports:
       - "8080:80"
       - "4443:443"
+    network_mode: host
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
@@ -110,12 +116,37 @@ services:
       - frontend
       - backend
     restart: unless-stopped
-    networks:
-      - visuar_network
     deploy:
       resources:
         limits:
           memory: 128M
+          cpus: '0.25'
+
+    extra_hosts:
+      - "postgres:host-gateway"
+      - "redis:host-gateway"
+      - "visuar_scraper:host-gateway"
+      - "visuar_dashboard:host-gateway"
+      - "backend:host-gateway"
+
+  # ─────────────────────────────────────────────────
+  # REDIS: Caching layer for API responses
+  # ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: visuar_cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - visuar_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    deploy:
+      resources:
+        limits:
+          memory: 256M
           cpus: '0.25'
 
 volumes:
@@ -127,7 +158,11 @@ volumes:
     driver: local
   nginx_cache:
     driver: local
+  redis_data:
+    driver: local
 
 networks:
   visuar_network:
     driver: bridge
+    # Usar red por defecto de Docker para evitar problemas de NAT
+    # ipam removido - Docker gestionará la subred automáticamente

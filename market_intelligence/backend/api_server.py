@@ -2,7 +2,7 @@ import os
 import json
 import threading
 import logging
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
 import math
@@ -180,8 +180,104 @@ def get_live_data():
 
 @app.route('/health', methods=['GET'])
 def health():
-    """Health check endpoint."""
-    return jsonify({"status": "ok", "service": "visuar-scraper"})
+    """Health check endpoint with database connectivity."""
+    health_status = {
+        "status": "ok",
+        "service": "visuar-scraper",
+        "checks": {}
+    }
+    
+    # Check database connectivity
+    try:
+        with engine.connect() as conn:
+            conn.execute(text('SELECT 1'))
+        health_status["checks"]["database"] = "ok"
+    except Exception as e:
+        health_status["status"] = "degraded"
+        health_status["checks"]["database"] = f"error: {str(e)}"
+    
+    # Check Redis connectivity (optional)
+    try:
+        redis_url = os.environ.get('REDIS_URL')
+        if redis_url:
+            import redis
+            r = redis.from_url(redis_url)
+            r.ping()
+            health_status["checks"]["redis"] = "ok"
+    except Exception as e:
+        health_status["checks"]["redis"] = f"unavailable: {str(e)}"
+    
+    # Check if scrape is running
+    with _scrape_lock:
+        health_status["scrape_running"] = _scrape_state["running"]
+    
+    status_code = 200 if health_status["status"] == "ok" else 503
+    return jsonify(health_status), status_code
+
+
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    """Prometheus-compatible metrics endpoint."""
+    from datetime import datetime, timezone
+    
+    metrics_lines = []
+    
+    # Helper to add metric
+    def add_metric(name, value, labels=None):
+        label_str = "" if not labels else "{" + ",".join(f'{k}="{v}"' for k, v in labels.items()) + "}"
+        metrics_lines.append(f"visuar_{name}{label_str} {value}")
+    
+    try:
+        with engine.connect() as conn:
+            # Count products
+            total_products = conn.execute(text("SELECT COUNT(*) FROM products")).scalar()
+            add_metric("products_total", total_products)
+            
+            # Count competitor products
+            total_competitor = conn.execute(text("SELECT COUNT(*) FROM competitor_products")).scalar()
+            add_metric("competitor_products_total", total_competitor)
+            
+            # Count AI matches
+            ai_matched = conn.execute(text(
+                "SELECT COUNT(*) FROM pending_mappings WHERE match_score >= 60"
+            )).scalar()
+            add_metric("ai_matched_total", ai_matched)
+            
+            # Count scrape logs
+            recent_scrape = conn.execute(text(
+                "SELECT COUNT(*) FROM scrape_logs WHERE started_at > NOW() - INTERVAL '24 hours'"
+            )).scalar()
+            add_metric("scrape_runs_24h", recent_scrape)
+            
+            # Latest scrape status
+            last_scrape = conn.execute(text(
+                "SELECT status, products_scraped, finished_at FROM scrape_logs "
+                "WHERE finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 1"
+            )).fetchone()
+            
+            if last_scrape:
+                add_metric("last_scrape_status", 1 if last_scrape.status == 'success' else 0, 
+                          {"status": last_scrape.status or "unknown"})
+                add_metric("last_scrape_products", last_scrape.products_scraped or 0)
+            
+            # Count alerts
+            active_alerts = conn.execute(text(
+                "SELECT COUNT(*) FROM alert_rules WHERE is_active = true"
+            )).scalar()
+            add_metric("active_alerts", active_alerts)
+            
+    except Exception as e:
+        logger.error(f"[METRICS] Error collecting metrics: {e}")
+        add_metric("errors_total", 1, {"type": "metrics_collection"})
+    
+    # Scrape state metrics
+    with _scrape_lock:
+        add_metric("scrape_running", 1 if _scrape_state["running"] else 0)
+    
+    # Timestamp
+    metrics_lines.append(f"visuar_metrics_timestamp {int(datetime.now(timezone.utc).timestamp())}")
+    
+    return Response("\n".join(metrics_lines), mimetype='text/plain')
 
 
 @app.route('/api/scrape', methods=['POST'])
@@ -223,8 +319,67 @@ def scrape_status():
             "scraping": _scrape_state["running"],
             "last_result": _scrape_state["last_result"],
             "error": _scrape_state["error"],
+            "progress": _scrape_state["progress"],
             "metadata": metadata
         })
+
+
+# ── Brands Management API ───────────────────────────────────────
+
+@app.route('/api/brands', methods=['GET'])
+def get_brands():
+    """Get all active brands from database."""
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text(
+                "SELECT name, display_name, is_active, is_known "
+                "FROM brands WHERE is_active = true ORDER BY name"
+            ))
+            brands = [dict(row._mapping) for row in result]
+            return jsonify({"brands": brands}), 200
+    except Exception as e:
+        logger.error(f"[BRANDS] Error fetching brands: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/brands', methods=['POST'])
+def add_brand():
+    """Add a new brand to the database."""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').upper().strip()
+        display_name = data.get('display_name', name)
+        
+        if not name:
+            return jsonify({"error": "Brand name is required"}), 400
+        
+        with engine.connect() as conn:
+            conn.execute(text(
+                "INSERT INTO brands (name, display_name) VALUES (:name, :display_name) "
+                "ON CONFLICT (name) DO UPDATE SET display_name = :display_name"
+            ), {"name": name, "display_name": display_name})
+            conn.commit()
+        
+        return jsonify({"status": "success", "brand": name}), 201
+    except Exception as e:
+        logger.error(f"[BRANDS] Error adding brand: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/brands/<brand_name>', methods=['DELETE'])
+def delete_brand(brand_name):
+    """Deactivate a brand (soft delete)."""
+    try:
+        with engine.connect() as conn:
+            conn.execute(text(
+                "UPDATE brands SET is_active = false WHERE name = :name"
+            ), {"name": brand_name.upper()})
+            conn.commit()
+        
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        logger.error(f"[BRANDS] Error deleting brand: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':

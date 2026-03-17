@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import pg from 'pg';
+import { getCached, CACHE_TTL } from '../../lib/cache.js';
 
 const { Pool } = pg;
 
@@ -304,6 +305,25 @@ async function loadAIMappings() {
 // Astro API Endpoint
 export async function GET() {
     try {
+        // Use cache for dashboard data (5 minute TTL)
+        const data = await getCached(
+            'dashboard_data',
+            async () => await fetchDashboardData(),
+            CACHE_TTL.DASHBOARD_DATA
+        );
+        
+        return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    }
+}
+
+// Main data fetching logic (called by cache or directly)
+async function fetchDashboardData() {
+    try {
         const pool = new Pool(PG_CONFIG);
         
         // 1. Fetch Visuar Products (the base catalog)
@@ -427,11 +447,9 @@ export async function GET() {
         
         console.log(`[DATA.API] Final stats:`, stats);
         
-        return new Response(JSON.stringify({ rows, stats }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return { rows, stats };
     } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        console.error("[DATA.API] Error in fetchDashboardData:", err);
+        throw err;
     }
 }

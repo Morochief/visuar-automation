@@ -195,7 +195,7 @@ def match_single_product(session: Session, cp: CompetitorProduct) -> Optional[di
     return result
 
 
-def run_ai_matching(session: Session, min_confidence: int = 60):
+def run_ai_matching(session: Session, min_confidence: int = 60, progress_callback=None):
     """
     Main entry point: find all unmatched competitor products and attempt
     AI-powered matching against the canonical catalog.
@@ -203,6 +203,7 @@ def run_ai_matching(session: Session, min_confidence: int = 60):
     Args:
         session: SQLAlchemy session
         min_confidence: Minimum AI confidence (0-100) required to create a PendingMapping
+        progress_callback: Optional callable(source, phase, current, total)
     """
     # Get competitor products without a canonical match
     unmatched = (
@@ -215,13 +216,18 @@ def run_ai_matching(session: Session, min_confidence: int = 60):
         logger.info("[AI_MATCHER] No unmatched products found. Nothing to do.")
         return
 
-    logger.info(f"[AI_MATCHER] Processing {len(unmatched)} unmatched product(s)...")
+    total = len(unmatched)
+    logger.info(f"[AI_MATCHER] Processing {total} unmatched product(s)...")
+    if progress_callback:
+        progress_callback(source="AI Matcher", phase="Matching AI", current=0, total=total)
 
     matched_count = 0
     skipped_count = 0
     failed_count = 0
 
-    for cp in unmatched:
+    for idx, cp in enumerate(unmatched):
+        if progress_callback:
+            progress_callback(current=idx + 1, total=total)
         result = match_single_product(session, cp)
 
         if not result:

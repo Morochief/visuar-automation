@@ -135,3 +135,15 @@ class NotificationLog(Base):
     alert_rule = relationship("AlertRule", back_populates="notifications")
     price_log = relationship("PriceLog")
 
+
+class Brand(Base):
+    """Known brands for product matching and extraction."""
+    __tablename__ = 'brands'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False, unique=True)
+    display_name = Column(String(100))
+    is_active = Column(Boolean, default=True)
+    is_known = Column(Boolean, default=True)
+    created_at = Column(DateTime, server_default=func.now())
+

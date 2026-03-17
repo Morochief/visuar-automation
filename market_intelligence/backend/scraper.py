@@ -199,13 +199,55 @@ class MarketIntelligenceEngine:
                 except ValueError: pass
             
             if title and price > 0:
-                # Brand is usually the first word
-                brand = title.split()[0] if title else None
+                # Optimized Brand Extraction for GG
+                # Example: "Acondicionador de Aire TOKYO ..." -> "TOKYO"
+                parts = title.upper().split()
+                brand = "UNKNOWN"
+                
+                # Brands observed: Altech, Goodweather, HITACHI, Mabe, Midas, Samsung, TCL, Tokyo, VCP, etc.
+                known_brands = ["ALTECH", "GOODWEATHER", "HITACHI", "MABE", "MIDAS", "SAMSUNG", "TCL", "TOKYO", "VCP", "CARRIER", "LG", "MIDEA", "OSTER", "FAMA", "HAUSTEC", "WHIRLPOOL", "MITSUBISHI"]
+                
+                # Check for known brands anywhere in the title (case heavy)
+                found_brand = False
+                for b in known_brands:
+                    if b in parts:
+                        brand = b
+                        found_brand = True
+                        break
+                
+                if not found_brand and len(parts) > 0:
+                    # Specific pattern for GG: "Acondicionador de Aire [BRAND] ..."
+                    try:
+                        if "AIRE" in parts:
+                            idx = parts.index("AIRE")
+                            if len(parts) > idx + 1:
+                                potential = parts[idx + 1]
+                                if potential not in ["SPLIT", "INVERTER", "PORTATIL", "PARED", "PISO", "VENTANA", "DE", "CON"]:
+                                    brand = potential
+                                    found_brand = True
+                        
+                        if not found_brand and "ACONDICIONADOR" in parts:
+                            idx = parts.index("ACONDICIONADOR")
+                            if len(parts) > idx + 1:
+                                potential = parts[idx + 1]
+                                if potential not in ["DE", "SPLIT", "AIRE"]:
+                                    brand = potential
+                                    found_brand = True
+                    except: pass
+                    
+                    if not found_brand:
+                        # Fallback to first non-generic word
+                        generic_words = ["ACONDICIONADOR", "AIRE", "SPLIT", "INVERTER", "DE", "CON", "FRÍO", "CALOR"]
+                        for word in parts:
+                            if word not in generic_words and len(word) > 2:
+                                brand = word
+                                break
+
                 results.append({
                     "name": title.strip(), 
                     "price": price,
                     "url": url,
-                    "sku": None, # SKU is only in quickview/detail, skipping for speed
+                    "sku": None,
                     "brand": brand
                 })
         return results
@@ -233,6 +275,23 @@ class MarketIntelligenceEngine:
             with open(path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             logger.info(f"[EXPORT] Saved {path}")
+        
+        # Update metadata for frontend timestamp
+        self._update_metadata(len(visuar_data), len(gg_data), list(categorize(visuar_data).keys()), list(categorize(gg_data).keys()))
+
+    def _update_metadata(self, visuar_count, gg_count, visuar_brands, gg_brands):
+        """Update scrape_metadata.json with the latest run info."""
+        metadata_path = os.path.join(JSON_OUTPUT_DIR, "scrape_metadata.json")
+        metadata = {
+            "last_scrape": datetime.now(timezone.utc).isoformat(),
+            "visuar_count": visuar_count,
+            "gg_count": gg_count,
+            "visuar_brands": sorted(visuar_brands),
+            "gg_brands": sorted(gg_brands)
+        }
+        with open(metadata_path, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+        logger.info(f"[EXPORT] Updated {metadata_path}")
 
     async def run_pipeline(self):
         logger.info("[PIPELINE_START] Commencing Market Intelligence Data Ingestion")
@@ -254,39 +313,28 @@ class MarketIntelligenceEngine:
                 logger.info("Connecting to Visuar...")
                 
                 async def visit_visuar():
-                    await page.goto("https://www.visuar.com.py/hogar/aires-acondicionados/", wait_until="networkidle")
+                    # STABLE BASELINE: Use resultsPerPage=9999999 to load all 73 products at once
+                    await page.goto("https://www.visuar.com.py/hogar/aires-acondicionados/?resultsPerPage=9999999", wait_until="networkidle", timeout=60000)
                     
-                    # Auto-pagination: Scroll and click "Load More"
+                    # Auto-pagination: While we have everything, we still scroll for lazy images/triggers
                     seen_urls = set()
                     all_results = []
                     
-                    while True:
-                        await page.mouse.wheel(0, 2000)
-                        await page.wait_for_timeout(1000)
-                        
-                        # Extract current page items
-                        current_results = await self._scraped_results_visuar(page)
-                        for r in current_results:
-                            if r["url"] not in seen_urls:
-                                seen_urls.add(r["url"])
-                                all_results.append(r)
-                                
-                        try:
-                            # Attempt to find the standard Prestashop pagination/infinite-scroll trigger
-                            load_more = await page.query_selector('.next.js-search-link, .infinite-scroll-button')
-                            if load_more:
-                                is_vis = await load_more.is_visible()
-                                if is_vis:
-                                    await load_more.click()
-                                    await page.wait_for_timeout(3000) # Wait for network payload / page reload
-                                else:
-                                    break # Reached the end of the catalog
-                            else:
-                                break # Reached the end of the catalog
-                        except Exception as e:
-                            logger.error(f"[VISUAR] Exception in pagination: {e}")
-                            break
+                    # Small wait for DOM items to render
+                    await page.wait_for_selector('.product-miniature', timeout=20000)
+                    
+                    # Force a few scrolls to ensure everything is in state
+                    for _ in range(3):
+                        await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                        await page.wait_for_timeout(2000)
+                    
+                    current_results = await self._scraped_results_visuar(page)
+                    for r in current_results:
+                        if r["url"] not in seen_urls:
+                            seen_urls.add(r["url"])
+                            all_results.append(r)
                             
+                    logger.info(f"[SOURCE_A] Visuar found {len(all_results)} items using 'View All' strategy.")
                     return all_results
                 
                 visuar_data = await retry_with_backoff(visit_visuar, max_retries=3)
@@ -302,35 +350,11 @@ class MarketIntelligenceEngine:
                 session.add(visuar_log)
             
             # ── Bristol ──
+            # DISABLED: User requested only GG scraping
             bristol_data = []
-            bristol_log = ScrapeLog(started_at=datetime.now(timezone.utc), status='failed')
-            try:
-                comp_b = session.query(Competitor).filter_by(name='Bristol').first()
-                if comp_b:
-                    bristol_log.competitor_id = comp_b.id
-                self._update_progress(source="Bristol", phase="Scraping", current=0, total=0)
-                logger.info("Connecting to Bristol...")
-                
-                async def visit_bristol():
-                    await page.goto("https://www.bristol.com.py/climatizacion/climatizacion/splits", wait_until="networkidle")
-                    try:
-                        await page.wait_for_selector('#catalogoProductos .it', timeout=10000)
-                        await page.wait_for_timeout(2000)
-                    except Exception as e:
-                        logger.warning(f"Timeout waiting for elements on Bristol: {e}")
-                    return await self._scraped_results_bristol(page)
-                
-                bristol_data = await retry_with_backoff(visit_bristol, max_retries=3)
-                bristol_log.status = 'success'
-                bristol_log.products_scraped = len(bristol_data)
-                self._update_progress(source="Bristol", current=len(bristol_data), total=len(bristol_data))
-                logger.info(f"[SOURCE_B] Ingested {len(bristol_data)} records from Bristol")
-            except Exception as e:
-                bristol_log.error_message = str(e)
-                logger.error(f"[SOURCE_B] Bristol scrape failed: {e}")
-            finally:
-                bristol_log.finished_at = datetime.now(timezone.utc)
-                session.add(bristol_log)
+            bristol_log = ScrapeLog(started_at=datetime.now(timezone.utc), status='skipped')
+            logger.info("[Bristol] Skipped - DISABLED by user request")
+            session.add(bristol_log)
 
             # ── Gonzalez Gimenez ──
             gg_data = []
@@ -349,14 +373,70 @@ class MarketIntelligenceEngine:
                 async def visit_gg():
                     await page.goto("https://www.gonzalezgimenez.com.py/categoria/127/acondicionadores-de-aire", wait_until="domcontentloaded")
                     try:
+                        # Initial wait for JS to load
+                        await page.wait_for_timeout(5000)
+                        
+                        # Multi-attempt popup bypass
+                        for _ in range(3):
+                            try:
+                                close_selectors = [".ins-close-button", ".close-modal", ".modal-close", ".btn-close", ".pop-close"]
+                                for selector in close_selectors:
+                                    if await page.is_visible(selector):
+                                        await page.click(selector, timeout=2000)
+                                        logger.info(f"[GG_SCRAPE] Closed popup using {selector}")
+                                        break
+                                await page.keyboard.press("Escape")
+                                await page.wait_for_timeout(1000)
+                            except: pass
+
                         await page.wait_for_selector('.item-catalogo', timeout=60000)
-                        # Scroll tiered to bypass lazy loading
-                        for i in range(1, 5):
-                            self._update_progress(current=i, total=4, phase="Scrolling GG")
-                            await page.evaluate(f"window.scrollTo(0, document.body.scrollHeight * {i/4})")
+                        
+                        # Dynamic Infinite Scroll Loop
+                        last_count = 0
+                        stuck_count = 0
+                        for i in range(50): # Max 50 attempts (~150s)
+                            # Scroll by a larger increment
+                            await page.evaluate("window.scrollBy(0, 3000)")
+                            await page.wait_for_timeout(3000)
+                            
+                            items = await page.query_selector_all('.product.item-catalogo')
+                            current_count = len(items)
+                            self._update_progress(source="Gonzalez Gimenez", current=current_count, total=68, phase=f"Scrolling GG ({current_count}/68)")
+                            
+                            # Log progress
+                            if i % 5 == 0:
+                                logger.info(f"[GG_SCRAPE] Scroll {i}: Found {current_count} items...")
+
+                            # Break if we see the end message or reach target
+                            end_msg = await page.get_by_text("- Se llegó al final de la lista -").is_visible()
+                            if end_msg or current_count >= 68:
+                                logger.info(f"[GG_SCRAPE] End reached. Items: {current_count}")
+                                break
+                                
+                            if current_count > last_count:
+                                last_count = current_count
+                                stuck_count = 0
+                            else:
+                                stuck_count += 1
+                                # Shaking the scroll if stuck
+                                if stuck_count >= 3:
+                                    await page.evaluate("window.scrollBy(0, -1000)")
+                                    await page.wait_for_timeout(1000)
+                                    await page.evaluate("window.scrollBy(0, 2000)")
+                                
+                                if stuck_count > 6:
+                                    logger.warning(f"[GG_SCRAPE] No new items after {stuck_count} scrolls. Stopping at {current_count}.")
+                                    break
+                            
+                            # Standard scroll to bottom
+                            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                            await page.wait_for_timeout(3000)
+                            # Extra nudge to trigger lazy loader
+                            await page.mouse.wheel(0, 1000)
                             await page.wait_for_timeout(2000)
+                            
                     except Exception as e:
-                        logger.warning(f"Timeout waiting for elements on GG: {e}")
+                        logger.warning(f"Error during GG infinite scroll: {e}")
                         await page.screenshot(path='/app/output/gg_debug.png')
                     return await self._scraped_results_gg(page)
                 
@@ -417,7 +497,14 @@ class MarketIntelligenceEngine:
             
             session.flush()
 
+            total_sync = len(visuar_data) + len(bristol_data) + (len(gg_data) if gg_data else 0)
+            self._update_progress(source="Database", phase="Syncing Data", current=0, total=total_sync)
+            current_sync = 0
+
             def get_or_create_cp(comp_id, item):
+                nonlocal current_sync
+                current_sync += 1
+                self._update_progress(current=current_sync)
                 cp = session.query(CompetitorProduct).filter_by(
                     competitor_id=comp_id, name=item['name']
                 ).first()
@@ -481,7 +568,7 @@ class MarketIntelligenceEngine:
 
             # Run AI Product Matching
             logger.info("[AI_MATCHER] Starting Semantic DeepSeek Matching for unmatched products...")
-            run_ai_matching(session)
+            run_ai_matching(session, progress_callback=self._update_progress)
 
             # Run Alert Engine
             from alert_engine import evaluate_alerts

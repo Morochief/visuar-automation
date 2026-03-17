@@ -33,6 +33,28 @@ El sistema ha sido purgado de vulnerabilidades:
 - Todo se inyecta de forma segura a través de variables de entorno (Enviroment Variables).
 - La base de datos corre aislada en una subred interna de Docker, inalcanzable de manera directa desde el exterior.
 
+## 5. Caché Inteligente (Redis)
+El sistema ahora utiliza **Redis** como capa de caché para optimizar el rendimiento:
+- **TTL Configurable**: Los datos del dashboard se cachean por 5 minutos, los mappings de IA por 30 minutos.
+- **Fallback Graceful**: Si Redis no está disponible, el sistema funciona correctamente consultando la base de datos directamente.
+- **Invalidación**: El caché se invalida automáticamente según el TTL configurado.
+
+## 6. Monitoreo y Métricas
+El sistema ahora cuenta con endpoints de monitoreo compatibles con **Prometheus**:
+- **`/health`**: Verifica conectividad a PostgreSQL y Redis.
+- **`/metrics`**: Expone métricas como:
+  - Total de productos y competitor products
+  - Cantidad de productos matching por IA
+  - Ejecuciones de scrape en las últimas 24 horas
+  - Estado del último scrape
+  - Alertas activas
+
+## 7. Gestión de Marcas en Base de Datos
+Las marcas ahora se gestionan desde la base de datos, permitiendo:
+- **Administración sin código**: Añadir/eliminar marcas sin modificar código fuente.
+- **API REST**: Endpoints CRUD para gestionar marcas (`/api/brands`).
+- **24 marcas pre-cargadas**: El mercado paraguayo de aires acondicionados está listo para uso inmediato.
+
 ---
 
 **Conclusión:** Este motor de inteligencia comercial está preparado para correr de forma automatizada (ej. vía cron a las 3:00 AM), actualizar la base de datos velozmente, y otorgar una ventaja competitiva masiva basada en datos 100% curados con precisión matemática.

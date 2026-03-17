@@ -25,6 +25,7 @@ El proyecto es una plataforma de **Inteligencia de Precios en Tiempo Real** dise
 - **Containerización**: Docker & Docker Compose.
 - **Proxy Inverso**: Nginx (Manejo de CORS, compresión Gzip y Rate Limiting).
 - **Procesos en Segundo Plano**: Multi-threading mediante `threading` de Python y `nohup` para daemonización.
+- **Caché**: Redis 7 para optimizar respuestas de la API y reducir carga en PostgreSQL.
 
 ---
 
@@ -37,6 +38,9 @@ El proyecto es una plataforma de **Inteligencia de Precios en Tiempo Real** dise
 4. **`price_logs`**: Serie temporal de precios asociados a cada `competitor_product`.
 5. **`pending_mappings`**: Sugerencias de IA para revisión humana.
 6. **`scrape_logs`**: Auditoría de cada ejecución (tiempo, cantidad de éxitos, errores).
+7. **`brands`**: Catálogo de marcas conocidas del mercado (24 marcas pre-cargadas).
+8. **`alert_rules`**: Reglas de alertas de precio configuradas por el usuario.
+9. **`notifications_log`**: Historial de notificaciones enviadas.
 
 ### Vistas Críticas
 - **`opportunity_margin_vw`**: Una vista materializada (conceptual) que realiza el JOIN entre precios de Visuar y el último precio de competidores emparejados. Calcula:
@@ -67,6 +71,7 @@ El proyecto es una plataforma de **Inteligencia de Precios en Tiempo Real** dise
 - **Nginx Rate Limiting**: Protege el backend de ataques de denegación de servicio (DoS) o spam de peticiones del frontend.
 - **Defensive Frontend**: El Dashboard utiliza verificaciones de tipo (`Array.isArray`) para prevenir crashes si la API devuelve errores 50x.
 - **Background Startup**: El servidor de la API arranca independientemente del scraping para garantizar que el Dashboard siempre responda (Health Check).
+- **Monitoreo**: Endpoints `/health` y `/metrics` para verificación de estado y scrapeo de métricas por Prometheus.
 
 ---
 **Resumen para IA**: Este es un sistema de extracción ETL reactivo que utiliza LLMs para resolver el problema de la falta de SKUs comunes en la web, traduciendo nombres de productos ambiguos en relaciones de base de datos precisas para la toma de decisiones comerciales.
